@@ -1,0 +1,9 @@
+datalad-installer
+datalad
+numpy
+scipy
+matplotlib
+pandas
+scikit-learn
+tqdm
+yaml
