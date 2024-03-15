@@ -39,4 +39,9 @@ datalad get derivative/preprocessed_data/UTS02/souls.hf5
 datalad get derivative/preprocessed_data/UTS02/avatar.hf5
 datalad get derivative/preprocessed_data/UTS02/legacy.hf5
 datalad get derivative/preprocessed_data/UTS02/odetostepfather.hf5
+datalad get derivative/TextGrids/alternateithicatom.TextGrid
+datalad get derivative/TextGrids/souls.TextGrid
+datalad get derivative/TextGrids/avatar.TextGrid
+datalad get derivative/TextGrids/legacy.TextGrid
+datalad get derivative/TextGrids/odetostepfather.TextGrid
 ```
