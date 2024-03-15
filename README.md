@@ -32,8 +32,11 @@ cd ds003020
 
 # Edit config.yaml such that your data path points to the ds003020 repository
 
+# Stories: https://www.nature.com/articles/s41597-023-02437-z/tables/1
 # download 5 files
-datalad get derivative/preprocessed_data/UTS02/X
-
-
+datalad get derivative/preprocessed_data/UTS02/alternateithicatom.hf5
+datalad get derivative/preprocessed_data/UTS02/souls.hf5
+datalad get derivative/preprocessed_data/UTS02/avatar.hf5
+datalad get derivative/preprocessed_data/UTS02/legacy.hf5
+datalad get derivative/preprocessed_data/UTS02/odetostepfather.hf5
 ```
