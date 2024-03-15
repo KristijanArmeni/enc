@@ -22,10 +22,18 @@ pre-commit install
 # run pre-commit against all files once
 pre-commit run --all-files
 
+# Copy th
+cp config.example.yaml config.yaml
+
 # download empty dataset (but not in the repository)
 cd <separate-data-dir>
 datalad clone https://github.com/OpenNeuroDatasets/ds003020.git
 cd ds003020
+
+# Edit config.yaml such that your data path points to the ds003020 repository
+
 # download 5 files
 datalad get derivative/preprocessed_data/UTS02/X
+
+
 ```
