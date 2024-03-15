@@ -6,6 +6,7 @@ pandas
 scikit-learn
 tqdm
 pyyaml
+h5py
 
 # --------- linters --------- #
 pre-commit      # hooks for applying linters on commit
