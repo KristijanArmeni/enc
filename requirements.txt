@@ -6,4 +6,11 @@ matplotlib
 pandas
 scikit-learn
 tqdm
-yaml
+pyyaml
+
+# --------- linters --------- #
+pre-commit      # hooks for applying linters on commit
+black           # code formatting
+isort           # import sorting
+flake8          # code analysis
+nbstripout      # remove output from jupyter notebooks
