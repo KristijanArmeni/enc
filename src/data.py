@@ -35,9 +35,16 @@ def load_textgrid(story: str):
 
 
 def load_fmri(story: str, subject: str) -> np.ndarray:
+    """Load fMRI data. Return ndarray with shape [time, voxels]."""
     config = load_config()
+
     subject_dir = Path(config["DATA_DIR"], f"derivative/preprocessed_data/{subject}")
     resp_path = Path(subject_dir, f"{story}.hf5")
     hf = h5py.File(resp_path, "r")
-    # shape (time, voxels)
+    log.info(
+        f"{story}.hf5"
+        f"{subject}"
+        f" | time: {hf['data'].shape[0]}"
+        f" | voxels: {hf['data'].shape[1]}"
+    )
     return np.array(hf["data"][:])  # type: ignore
