@@ -4,19 +4,34 @@ module for loading fMRI data and features and the like
 
 import re
 from pathlib import Path
+from typing import Tuple
 
+import h5py
 import numpy as np
 import pandas as pd
+from scipy.io import wavfile
 
-from utils import load_config
+from utils import get_logger, load_config
 
+log = get_logger(__name__)
 cfg = load_config()
+
 DATADIR = Path(cfg["DATA_DIR"])
 STORIES = cfg["STORIES"]
+WAV_DIR = "stimuli"
 
 
-def load_wav(story: str):
-    pass
+def load_wav(story: str) -> Tuple[int, np.ndarray]:
+    """Load wav file. Return ndarray with shape [samples, channels]."""
+
+    wav_path = Path(DATADIR, WAV_DIR, f"{story}.wav")
+    sample_rate, wav = wavfile.read(wav_path)
+    log.info(
+        f"{story}.wav"
+        f" | channels: {wav.shape[1]}"
+        f" | length {wav.shape[0] / sample_rate}s"
+    )
+    return sample_rate, wav
 
 
 def load_textgrid(story: str):
@@ -85,5 +100,16 @@ def load_textgrid(story: str):
     return lines
 
 
-def load_fmri(story: str):
-    pass
+def load_fmri(story: str, subject: str) -> np.ndarray:
+    """Load fMRI data. Return ndarray with shape [time, voxels]."""
+
+    subject_dir = Path(DATADIR, f"derivative/preprocessed_data/{subject}")
+    resp_path = Path(subject_dir, f"{story}.hf5")
+    hf = h5py.File(resp_path, "r")
+    log.info(
+        f"{story}.hf5"
+        f"{subject}"
+        f" | time: {hf['data'].shape[0]}"
+        f" | voxels: {hf['data'].shape[1]}"
+    )
+    return np.array(hf["data"][:])  # type: ignore

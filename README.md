@@ -44,4 +44,9 @@ datalad get derivative/TextGrids/souls.TextGrid
 datalad get derivative/TextGrids/avatar.TextGrid
 datalad get derivative/TextGrids/legacy.TextGrid
 datalad get derivative/TextGrids/odetostepfather.TextGrid
+datalad get stimuli/alternateithicatom.wav
+datalad get stimuli/souls.wav
+datalad get stimuli/avatar.wav
+datalad get stimuli/legacy.wav
+datalad get stimuli/odetostepfather.wav
 ```
