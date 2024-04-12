@@ -7,6 +7,10 @@ scikit-learn
 tqdm
 pyyaml
 h5py
+setuptools
+cython
+pycortex
+ipython
 
 # --------- linters --------- #
 pre-commit      # hooks for applying linters on commit
