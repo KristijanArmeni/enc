@@ -22,10 +22,14 @@ pre-commit install
 # run pre-commit against all files once
 pre-commit run --all-files
 
-# Copy th
+# Copy the config
 cp config.example.yaml config.yaml
+```
 
-# download empty dataset (but not in the repository)
+### Download data
+
+```sh
+# download empty dataset (ideally not within this repository)
 cd <separate-data-dir>
 datalad clone https://github.com/OpenNeuroDatasets/ds003020.git
 cd ds003020
@@ -50,3 +54,17 @@ datalad get stimuli/legacy.wav
 datalad get stimuli/odetostepfather.wav
 datalad get derivative/pycortex-db/UTS02/
 ```
+
+### Setup pycortex (for visualization)
+
+1. Find out the location of the pycortex config:
+   In the ipython terminal:
+
+```py
+import cortex
+cortex.options.usercfg
+```
+
+2. Open the config file (should be a `*/options.cfg`)
+
+3. Modify the filestore entry to point towards `ds003020/derivative/pycortex-db`
