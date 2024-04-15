@@ -17,4 +17,5 @@ pre-commit      # hooks for applying linters on commit
 black           # code formatting
 isort           # import sorting
 flake8          # code analysis
+flake8-bugbear  # problematic design patterns & bugs
 nbstripout      # remove output from jupyter notebooks
