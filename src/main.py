@@ -72,7 +72,7 @@ def load_sm1000_data(
 
 def do_envelope_regression():
     alpha = 1.0
-    n_splits = 5
+    n_splits = 4
     predictor = "embeddings"
 
     X_data_list = []
@@ -106,7 +106,7 @@ def do_envelope_regression():
     plt.plot(mean_scores)
     plt.show()
 
-    vol_data = cortex.Volume(np.array(mean_scores), "UTS02", "UTS02_auto")
+    vol_data = cortex.Volume(mean_scores, "UTS02", "UTS02_auto")
     cortex.webshow(vol_data)
 
 
