@@ -109,7 +109,7 @@ def load_fmri(story: str, subject: str) -> np.ndarray:
     hf = h5py.File(resp_path, "r")
     log.info(
         f"{story}.hf5"
-        f"{subject}"
+        f" | {subject}"
         f" | time: {hf['data'].shape[0]}"
         f" | voxels: {hf['data'].shape[1]}"
     )
