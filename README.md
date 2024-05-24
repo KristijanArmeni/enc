@@ -53,6 +53,7 @@ datalad get stimuli/avatar.wav
 datalad get stimuli/legacy.wav
 datalad get stimuli/odetostepfather.wav
 datalad get derivative/pycortex-db/UTS02/
+datalad get derivative/english1000sm.hf5
 ```
 
 ### Setup pycortex (for visualization)
