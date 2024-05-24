@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import cortex
@@ -18,6 +19,30 @@ WAV_DIR = "stimuli"
 CACHE_DIR = Path(cfg["CACHE_DIR"])
 
 
+def load_envelope_data(story: str, subject: str, tr_len: float = 2.0) -> np.ndarray:
+    path_cache_x = Path(CACHE_DIR, "envelope_data", f"{subject}_{story}_{tr_len}_X.npy")
+    if Path.exists(path_cache_x):
+        log.info(f"Loading from cache: {path_cache_x}")
+        return np.load(path_cache_x)
+
+    log.info(f"No data found in cache: {path_cache_x}")
+
+    sfreq, wav_data = load_wav(story)
+
+    fmri_sfreq = 1 / tr_len
+    scaling_factor = sfreq / fmri_sfreq
+
+    wav_data = np.mean(wav_data, axis=1)
+
+    X_data = downsample(trim(get_envelope(wav_data), sfreq), scaling_factor)
+    X_data = X_data[:, np.newaxis]
+
+    os.makedirs(Path(CACHE_DIR, "envelope_data"), exist_ok=True)
+    np.save(path_cache_x, X_data)
+    log.info("Cached results.")
+    return X_data
+
+
 def do_envelope_regression():
     alpha = 1.0
     n_splits = 5
@@ -29,17 +54,8 @@ def do_envelope_regression():
         subject = "UTS02"
         tr_len = 2.0
 
-        sfreq, wav_data = load_wav(story)
+        X_data = load_envelope_data(story, subject, tr_len)
         y_data = load_fmri(story, subject)
-
-        fmri_sfreq = 1 / tr_len
-        scaling_factor = sfreq / fmri_sfreq
-
-        wav_data = np.mean(wav_data, axis=1)
-
-        X_data = downsample(trim(get_envelope(wav_data), sfreq), scaling_factor)
-
-        X_data = X_data[:, np.newaxis]
 
         X_data_list.append(X_data)
         y_data_list.append(y_data)
