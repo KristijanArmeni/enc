@@ -19,6 +19,7 @@ cfg = load_config()
 DATADIR = Path(cfg["DATA_DIR"])
 STORIES = cfg["STORIES"]
 WAV_DIR = "stimuli"
+EMBEDDINGS_FILE = Path(DATADIR, "derivative", "english1000sm.hf5")
 
 
 def load_wav(story: str) -> Tuple[int, np.ndarray]:
@@ -97,7 +98,7 @@ def load_textgrid(story: str):
     out["phone"] = pd.DataFrame(phone_dict, columns=colnames)
     out["word"] = pd.DataFrame(word_dict, columns=colnames)
 
-    return lines
+    return out
 
 
 def load_fmri(story: str, subject: str) -> np.ndarray:
