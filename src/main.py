@@ -3,10 +3,10 @@ from pathlib import Path
 import cortex
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.linear_model import Ridge
 
 from data import load_fmri, load_wav
 from features import downsample, get_envelope, trim
+from regression import cross_validation_ridge_regression, score_correlation
 from utils import get_logger, load_config
 
 log = get_logger(__name__)
@@ -15,34 +15,49 @@ cfg = load_config()
 DATADIR = Path(cfg["DATA_DIR"])
 STORIES = cfg["STORIES"]
 WAV_DIR = "stimuli"
+CACHE_DIR = Path(cfg["CACHE_DIR"])
 
 
 def do_envelope_regression():
-    story = STORIES[0]
-    subject = "UTS02"
-    tr_len = 2.0
     alpha = 1.0
+    n_splits = 5
 
-    sfreq, wav_data = load_wav(story)
-    frmi_data = load_fmri(story, subject)
+    X_data_list = []
+    y_data_list = []
+    for story_id in [0, 1, 2, 3, 4]:
+        story = STORIES[story_id]
+        subject = "UTS02"
+        tr_len = 2.0
 
-    fmri_sfreq = 1 / tr_len
-    scaling_factor = sfreq / fmri_sfreq
+        sfreq, wav_data = load_wav(story)
+        y_data = load_fmri(story, subject)
 
-    wav_data = np.mean(wav_data, axis=1)
+        fmri_sfreq = 1 / tr_len
+        scaling_factor = sfreq / fmri_sfreq
 
-    X_data = downsample(trim(get_envelope(wav_data), sfreq), scaling_factor)
+        wav_data = np.mean(wav_data, axis=1)
 
-    clf = Ridge(alpha=alpha)
-    clf.fit(X_data[:, np.newaxis], frmi_data)
+        X_data = downsample(trim(get_envelope(wav_data), sfreq), scaling_factor)
 
-    y_hat = clf.predict(X_data[:, np.newaxis])
-    coefs = [np.corrcoef(y1, y2)[0, 1] for y1, y2 in zip(frmi_data.T, y_hat.T)]
+        X_data = X_data[:, np.newaxis]
 
-    plt.plot(coefs)
+        X_data_list.append(X_data)
+        y_data_list.append(y_data)
+
+    # from here: regression function
+
+    mean_scores, all_scores, all_weights = cross_validation_ridge_regression(
+        X_data_list,
+        y_data_list,
+        n_splits=n_splits,
+        alpha=alpha,
+        score_fct=score_correlation,
+    )
+
+    plt.plot(mean_scores)
     plt.show()
 
-    vol_data = cortex.Volume(np.array(coefs), "UTS02", "UTS02_auto")
+    vol_data = cortex.Volume(np.array(mean_scores), "UTS02", "UTS02_auto")
     cortex.webshow(vol_data)
 
 
