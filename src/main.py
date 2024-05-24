@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from data import load_fmri, load_wav
-from features import downsample, get_envelope, trim
+from features import downsample, get_embeddings, get_envelope, trim
 from regression import cross_validation_ridge_regression, score_correlation
 from utils import get_logger, load_config
 
@@ -19,8 +19,8 @@ WAV_DIR = "stimuli"
 CACHE_DIR = Path(cfg["CACHE_DIR"])
 
 
-def load_envelope_data(story: str, subject: str, tr_len: float = 2.0) -> np.ndarray:
-    path_cache_x = Path(CACHE_DIR, "envelope_data", f"{subject}_{story}_{tr_len}_X.npy")
+def load_envelope_data(story: str, tr_len: float = 2.0) -> np.ndarray:
+    path_cache_x = Path(CACHE_DIR, "envelope_data", f"{story}_{tr_len}_X.npy")
     if Path.exists(path_cache_x):
         log.info(f"Loading from cache: {path_cache_x}")
         return np.load(path_cache_x)
@@ -43,19 +43,52 @@ def load_envelope_data(story: str, subject: str, tr_len: float = 2.0) -> np.ndar
     return X_data
 
 
+def load_sm1000_data(
+    story: str,
+    tr_len: float,
+    y_data: np.ndarray,
+) -> np.ndarray:
+
+    data, starts, stops = get_embeddings(story)
+
+    t_word = (starts + stops) / 2
+
+    n_trs = y_data.shape[0]
+
+    # get indices for each tr
+    data_word_starts = [sum(t_word < idx_tr * tr_len) for idx_tr in range(n_trs + 1)]
+
+    X_data = np.empty((n_trs, data.shape[1]))
+    for idx_tr, (idx_start, idx_end) in enumerate(
+        zip(data_word_starts[:-1], data_word_starts[1:])
+    ):
+        if idx_start == idx_end:
+            X_data[idx_tr] = 0
+        else:
+            X_data[idx_tr] = np.mean(data[idx_start:idx_end], axis=0)
+
+    return X_data
+
+
 def do_envelope_regression():
     alpha = 1.0
     n_splits = 5
+    predictor = "embeddings"
 
     X_data_list = []
     y_data_list = []
-    for story_id in [0, 1, 2, 3, 4]:
+    for story_id in [0, 1, 2, 4]:
         story = STORIES[story_id]
         subject = "UTS02"
         tr_len = 2.0
 
-        X_data = load_envelope_data(story, subject, tr_len)
         y_data = load_fmri(story, subject)
+
+        if predictor == "embeddings":
+            X_data = load_sm1000_data(story, tr_len, y_data)
+
+        elif predictor == "envelope":
+            X_data = load_envelope_data(story, tr_len)
 
         X_data_list.append(X_data)
         y_data_list.append(y_data)

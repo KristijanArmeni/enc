@@ -36,6 +36,7 @@ def load_wav(story: str) -> Tuple[int, np.ndarray]:
 
 
 def load_textgrid(story: str):
+    # TODO: need to be able to handle different textgrid format, e.g. story = "legacy"
 
     textgrid_dir = DATADIR / "derivative" / "TextGrids"
     fn = textgrid_dir / f"{story}.TextGrid"
