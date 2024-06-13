@@ -69,3 +69,7 @@ cortex.options.usercfg
 2. Open the config file (should be a `*/options.cfg`)
 
 3. Modify the filestore entry to point towards `ds003020/derivative/pycortex-db`
+
+4. To use `quickshow` install inkscape: https://inkscape.org/release/inkscape-1.3.2/
+
+5. Make sure inkscape is available in the terminal. [Instructions Mac](https://stackoverflow.com/a/22085247)

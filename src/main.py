@@ -73,14 +73,14 @@ def load_sm1000_data(
 
 def do_envelope_regression():
     n_splits = 4
-    predictor = "embeddings"
+    predictor = "envelope"
+    subject = "UTS02"
+    tr_len = 2.0
 
     X_data_list = []
     y_data_list = []
     for story_id in [0, 1, 2, 4]:
         story = STORIES[story_id]
-        subject = "UTS02"
-        tr_len = 2.0
 
         y_data = load_fmri(story, subject)
 
@@ -108,9 +108,13 @@ def do_envelope_regression():
     plt.show()
 
     vol_data = cortex.Volume(
-        mean_scores, "UTS02", "UTS02_auto", vmin=0, vmax=0.5, cmap="inferno"
+        mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
     )
-    cortex.webshow(vol_data)
+    cortex.quickshow(vol_data)
+    plt.title(f"{subject} {predictor} performance.")
+    plt.show()
+    # without print statement the plot does not show up.
+    print("Done")
 
 
 if __name__ == "__main__":
