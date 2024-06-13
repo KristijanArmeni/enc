@@ -1,7 +1,7 @@
 from typing import Callable, List, Tuple
 
 import numpy as np
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold
 
 from utils import get_logger, load_config
@@ -38,8 +38,8 @@ def cross_validation_ridge_regression(
     X_data_list: List[np.ndarray],
     y_data_list: List[np.ndarray],
     n_splits: int,
-    alpha: float,
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
+    alphas: np.ndarray = np.logspace(-3, 3, 7),
 ) -> Tuple[np.ndarray, List[np.ndarray], List[np.ndarray]]:
     """Cross validate ridge regression
 
@@ -52,12 +52,12 @@ def cross_validation_ridge_regression(
         Must be in same order as X_data_list.
     n_splits : int
         Cross validation splits
-    alpha : float
-        Yeah...
     score_fct : fct(np.ndarray, np.ndarray) -> np.ndarray
         A function taking y_test (shape = (number_trs, n_voxels))
         and y_predict (same shape as y_test) and returning an
         array with an entry for each voxel (shape = (n_voxels))
+    alphas : np.ndarray
+        Array of alpha values to optimize over
     """
 
     kf = KFold(n_splits=n_splits)
@@ -86,8 +86,9 @@ def cross_validation_ridge_regression(
         X_test = z_score(X_test_unnormalized, X_means, X_stds)
         y_test = z_score(y_test_unnormalized, y_means, y_stds)
 
-        clf = Ridge(alpha=alpha)
+        clf = RidgeCV(alphas=alphas, alpha_per_target=True)
         clf.fit(X_train, y_train)
+        best_alpha = clf.alpha_
 
         y_predict = clf.predict(X_test)
         fold_scores = score_fct(y_test, y_predict)
@@ -97,4 +98,4 @@ def cross_validation_ridge_regression(
 
     mean_scores = np.mean(all_scores, axis=0)
 
-    return mean_scores, all_scores, all_weights
+    return mean_scores, all_scores, all_weights, best_alpha

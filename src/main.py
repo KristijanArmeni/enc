@@ -71,7 +71,6 @@ def load_sm1000_data(
 
 
 def do_envelope_regression():
-    alpha = 1.0
     n_splits = 4
     predictor = "embeddings"
 
@@ -95,18 +94,21 @@ def do_envelope_regression():
 
     # from here: regression function
 
-    mean_scores, all_scores, all_weights = cross_validation_ridge_regression(
-        X_data_list,
-        y_data_list,
-        n_splits=n_splits,
-        alpha=alpha,
-        score_fct=score_correlation,
+    (
+        mean_scores,
+        all_scores,
+        all_weights,
+        best_alpha,
+    ) = cross_validation_ridge_regression(
+        X_data_list, y_data_list, n_splits=n_splits, score_fct=score_correlation
     )
 
     plt.plot(mean_scores)
     plt.show()
 
-    vol_data = cortex.Volume(mean_scores, "UTS02", "UTS02_auto")
+    vol_data = cortex.Volume(
+        mean_scores, "UTS02", "UTS02_auto", vmin=0, vmax=0.5, cmap="inferno"
+    )
     cortex.webshow(vol_data)
 
 
