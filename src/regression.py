@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import RidgeCV
@@ -40,7 +40,7 @@ def cross_validation_ridge_regression(
     n_splits: int,
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
     alphas: np.ndarray = np.logspace(-3, 3, 7),
-) -> Tuple[np.ndarray, List[np.ndarray], List[np.ndarray]]:
+) -> Tuple[np.ndarray, List[np.ndarray], List[np.ndarray], Union[float, np.ndarray]]:
     """Cross validate ridge regression
 
     Parameters

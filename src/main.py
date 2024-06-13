@@ -51,6 +51,7 @@ def load_sm1000_data(
 
     data, starts, stops = get_embeddings(story)
 
+    # get 'mean word position'
     t_word = (starts + stops) / 2
 
     n_trs = y_data.shape[0]
