@@ -127,7 +127,12 @@ def do_envelope_regression(
     cortex.quickshow(vol_data)
     plt.title(f"{subject} {predictor} performance.")
     plt.show()
-    plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"))
+    # save the plot
+    _ = cortex.quickflat.make_png(
+        os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"),
+        vol_data,
+        recache=False,
+    )
     # without print statement the plot does not show up.
     print("Done")
 
