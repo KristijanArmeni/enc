@@ -87,6 +87,7 @@ def do_regression(
     tr_len: float = 2.0,
     use_cache: bool = True,
     n_delays: int = 4,
+    show_results: bool = True,
 ) -> np.ndarray:
     n_splits = n_stories
 
@@ -119,23 +120,25 @@ def do_regression(
         X_data_list, y_data_list, n_splits=n_splits, score_fct=score_correlation
     )
 
-    plt.plot(mean_scores)
-    plt.show()
+    if show_results:
+        plt.plot(mean_scores)
+        plt.show()
     log.info(f"Mean correlation (r): {mean_scores.mean()}")
 
     vol_data = cortex.Volume(
         mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
     )
-    cortex.quickshow(vol_data)
-    plt.title(f"{subject} {predictor} performance.")
-    plt.show()
-    plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_stories}.png"))
-    # save the plot
-    _ = cortex.quickflat.make_png(
-        os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"),
-        vol_data,
-        recache=False,
-    )
+    if show_results:
+        cortex.quickshow(vol_data)
+        plt.title(f"{subject} {predictor} performance.")
+        plt.show()
+        plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_stories}.png"))
+        # save the plot
+        _ = cortex.quickflat.make_png(
+            os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"),
+            vol_data,
+            recache=False,
+        )
     # without print statement the plot does not show up.
     print("Done")
     return mean_scores
