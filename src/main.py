@@ -130,6 +130,12 @@ def do_regression(
     plt.title(f"{subject} {predictor} performance.")
     plt.show()
     plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_stories}.png"))
+    # save the plot
+    _ = cortex.quickflat.make_png(
+        os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"),
+        vol_data,
+        recache=False,
+    )
     # without print statement the plot does not show up.
     print("Done")
     return mean_scores
