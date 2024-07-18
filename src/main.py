@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 
@@ -19,9 +20,11 @@ WAV_DIR = "stimuli"
 CACHE_DIR = Path(cfg["CACHE_DIR"])
 
 
-def load_envelope_data(story: str, tr_len: float = 2.0) -> np.ndarray:
+def load_envelope_data(
+    story: str, tr_len: float = 2.0, use_cache: bool = True
+) -> np.ndarray:
     path_cache_x = Path(CACHE_DIR, "envelope_data", f"{story}_{tr_len}_X.npy")
-    if Path.exists(path_cache_x):
+    if Path.exists(path_cache_x) and use_cache:
         log.info(f"Loading from cache: {path_cache_x}")
         return np.load(path_cache_x)
 
@@ -34,19 +37,20 @@ def load_envelope_data(story: str, tr_len: float = 2.0) -> np.ndarray:
 
     wav_data = np.mean(wav_data, axis=1)
 
-    X_data = downsample(trim(get_envelope(wav_data), sfreq), scaling_factor)
+    X_envelope = get_envelope(wav_data)
+    X_trimmed = trim(X_envelope, sfreq)
+    X_data = downsample(X_trimmed, scaling_factor)
     X_data = X_data[:, np.newaxis]
 
-    os.makedirs(Path(CACHE_DIR, "envelope_data"), exist_ok=True)
-    np.save(path_cache_x, X_data)
-    log.info("Cached results.")
+    if use_cache:
+        os.makedirs(Path(CACHE_DIR, "envelope_data"), exist_ok=True)
+        np.save(path_cache_x, X_data)
+        log.info("Cached results.")
     return X_data
 
 
 def load_sm1000_data(
-    story: str,
-    tr_len: float,
-    y_data: np.ndarray,
+    story: str, tr_len: float, y_data: np.ndarray, start_trim: float = 0.0
 ) -> np.ndarray:
 
     data, starts, stops = get_embeddings(story)
@@ -56,31 +60,39 @@ def load_sm1000_data(
 
     n_trs = y_data.shape[0]
 
-    # get indices for each tr
-    data_word_starts = [sum(t_word < idx_tr * tr_len) for idx_tr in range(n_trs + 1)]
+    # get starting word index for each tr
+    # first 10 seconds of the fMRI data is trimmed
+    data_word_starts = [
+        sum(t_word < idx_tr * tr_len + start_trim) for idx_tr in range(n_trs + 1)
+    ]
 
     X_data = np.empty((n_trs, data.shape[1]))
     for idx_tr, (idx_start, idx_end) in enumerate(
         zip(data_word_starts[:-1], data_word_starts[1:])
     ):
         if idx_start == idx_end:
+            # no word in tr
             X_data[idx_tr] = 0
         else:
+            # average words occuring in tr
             X_data[idx_tr] = np.mean(data[idx_start:idx_end], axis=0)
 
     return X_data
 
 
-def do_envelope_regression():
-    n_splits = 4
-    predictor = "embeddings"
-    subject = "UTS02"
-    tr_len = 2.0
-    n_delays = 4
+def do_envelope_regression(
+    predictor: str = "embeddings",
+    n_stories: int = 5,
+    subject: str = "UTS02",
+    tr_len: float = 2.0,
+    use_cache: bool = True,
+    n_delays: int = 4,
+):
+    n_splits = n_stories
 
     X_data_list = []
     y_data_list = []
-    for story_id in [0, 1, 2, 4]:
+    for story_id in range(n_stories):
         story = STORIES[story_id]
 
         y_data = load_fmri(story, subject)
@@ -90,7 +102,7 @@ def do_envelope_regression():
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         elif predictor == "envelope":
-            X_data = load_envelope_data(story, tr_len)
+            X_data = load_envelope_data(story, tr_len, use_cache)
 
         X_data_list.append(X_data)
         y_data_list.append(y_data)
@@ -115,9 +127,45 @@ def do_envelope_regression():
     cortex.quickshow(vol_data)
     plt.title(f"{subject} {predictor} performance.")
     plt.show()
+    plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"))
     # without print statement the plot does not show up.
     print("Done")
 
 
 if __name__ == "__main__":
-    do_envelope_regression()
+    parser = argparse.ArgumentParser(description="A program to run a ")
+    parser.add_argument(
+        "predictor", choices=["embeddings", "envelope"], help="The predictor"
+    )
+    parser.add_argument(
+        "--n_stories",
+        default=5,
+        type=int,
+        help="How many stories are used. Averages LOO results.",
+    )
+    parser.add_argument(
+        "--subject",
+        default="UTS02",
+        type=str,
+        help="Subject identifier in the downloaded dataset.",
+    )
+    parser.add_argument(
+        "--not_use_cache",
+        action="store_true",
+        help="Disable cache for feature commputation.",
+    )
+    parser.add_argument(
+        "--n_delays",
+        default=4,
+        type=int,
+        help="Delays to model the HRF.",
+    )
+
+    args = parser.parse_args()
+    do_envelope_regression(
+        predictor=args.predictor,
+        n_stories=args.n_stories,
+        subject=args.subject,
+        use_cache=not args.not_use_cache,
+        n_delays=args.n_delays,
+    )
