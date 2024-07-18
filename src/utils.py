@@ -70,10 +70,15 @@ def make_delayed(signal: np.ndarray, delays: np.ndarray, circpad=False) -> np.nd
         else:
             if delay > 0:
                 delayed_signal[delay:, :] = signal[:-delay, :]
-            elif delay < 9:
+            elif delay < 0:
                 delayed_signal[:delay, :] = signal[-delay:, :]
             else:
                 delayed_signal = signal.copy()
         delayed_signals.append(delayed_signal)
 
     return np.hstack(delayed_signals)
+
+
+signal = np.array([[1, 2], [3, 4], [5, 6]])
+delays = [-1, 0, 1]
+print(make_delayed(signal, delays, circpad=False))

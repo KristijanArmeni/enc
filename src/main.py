@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from data import load_fmri, load_wav
 from features import downsample, get_embeddings, get_envelope, trim
 from regression import cross_validation_ridge_regression, score_correlation
-from utils import get_logger, load_config
+from utils import get_logger, load_config, make_delayed
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -73,9 +73,10 @@ def load_sm1000_data(
 
 def do_envelope_regression():
     n_splits = 4
-    predictor = "envelope"
+    predictor = "embeddings"
     subject = "UTS02"
     tr_len = 2.0
+    n_delays = 4
 
     X_data_list = []
     y_data_list = []
@@ -86,6 +87,7 @@ def do_envelope_regression():
 
         if predictor == "embeddings":
             X_data = load_sm1000_data(story, tr_len, y_data)
+            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         elif predictor == "envelope":
             X_data = load_envelope_data(story, tr_len)
