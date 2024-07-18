@@ -50,7 +50,7 @@ def load_envelope_data(
 
 
 def load_sm1000_data(
-    story: str, tr_len: float, y_data: np.ndarray, start_trim: float = 0.0
+    story: str, tr_len: float, y_data: np.ndarray, start_trim: float = 10.0
 ) -> np.ndarray:
 
     data, starts, stops = get_embeddings(story)
