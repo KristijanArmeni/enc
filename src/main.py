@@ -103,6 +103,7 @@ def do_envelope_regression(
 
         elif predictor == "envelope":
             X_data = load_envelope_data(story, tr_len, use_cache)
+            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         X_data_list.append(X_data)
         y_data_list.append(y_data)
@@ -120,6 +121,7 @@ def do_envelope_regression(
 
     plt.plot(mean_scores)
     plt.show()
+    log.info(f"Mean correlation (r): {mean_scores.mean()}")
 
     vol_data = cortex.Volume(
         mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
@@ -127,7 +129,7 @@ def do_envelope_regression(
     cortex.quickshow(vol_data)
     plt.title(f"{subject} {predictor} performance.")
     plt.show()
-    plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_splits}.png"))
+    plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_stories}.png"))
     # without print statement the plot does not show up.
     print("Done")
 
