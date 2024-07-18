@@ -1,3 +1,5 @@
 config.yaml
 __pycache__
 .cache
+.DS_Store
+.vscode
