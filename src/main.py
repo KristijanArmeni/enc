@@ -80,14 +80,14 @@ def load_sm1000_data(
     return X_data
 
 
-def do_envelope_regression(
+def do_regression(
     predictor: str = "embeddings",
     n_stories: int = 5,
     subject: str = "UTS02",
     tr_len: float = 2.0,
     use_cache: bool = True,
     n_delays: int = 4,
-):
+) -> np.ndarray:
     n_splits = n_stories
 
     X_data_list = []
@@ -132,6 +132,7 @@ def do_envelope_regression(
     plt.savefig(os.path.join("data", f"{predictor}_{subject}_{n_stories}.png"))
     # without print statement the plot does not show up.
     print("Done")
+    return mean_scores
 
 
 if __name__ == "__main__":
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    do_envelope_regression(
+    do_regression(
         predictor=args.predictor,
         n_stories=args.n_stories,
         subject=args.subject,
