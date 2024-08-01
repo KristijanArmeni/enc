@@ -1,6 +1,6 @@
 site_name: The Encoders
 site_author: Kristijan
-site_url: https://gabrielKP.com/enc
+site_url: https://gabrielkp.com/enc
 repo_url: https://github.com/GabrielKP/enc
 nav:
   - "Home": "index.md"
