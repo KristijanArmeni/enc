@@ -88,6 +88,7 @@ def do_regression(
     use_cache: bool = True,
     n_delays: int = 4,
     show_results: bool = True,
+    shuffle: bool = False,
 ) -> np.ndarray:
     n_splits = n_stories
 
@@ -97,6 +98,8 @@ def do_regression(
         story = STORIES[story_id]
 
         y_data = load_fmri(story, subject)
+        if shuffle:
+            y_data = np.random.permutation(y_data)
 
         if predictor == "embeddings":
             X_data = load_sm1000_data(story, tr_len, y_data)
