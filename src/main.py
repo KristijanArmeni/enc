@@ -142,8 +142,8 @@ def do_regression(
             vol_data,
             recache=False,
         )
-    # without print statement the plot does not show up.
-    print("Done")
+        # without print statement the plot does not show up.
+        print("Done")
     return mean_scores
 
 
