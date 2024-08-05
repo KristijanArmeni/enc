@@ -1,6 +1,7 @@
 import logging
+import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 import yaml
@@ -29,6 +30,9 @@ def get_logger(
         logger.addHandler(fh)
 
     return logger
+
+
+log = get_logger(__name__)
 
 
 def load_config():
@@ -77,3 +81,31 @@ def make_delayed(signal: np.ndarray, delays: np.ndarray, circpad=False) -> np.nd
         delayed_signals.append(delayed_signal)
 
     return np.hstack(delayed_signals)
+
+
+def check_make_dirs(
+    paths: Union[str, List[str]],
+    verbose: bool = True,
+    isdir: bool = False,
+) -> None:
+    """Create base directories for given paths if they do not exist.
+
+    Parameters
+    ----------
+    paths: List[str] | str
+        A path or list of paths for which to check the basedirectories
+    verbose: bool, default=True
+        Whether to log the output path
+    isdir: bool, default=False
+        Treats given path(s) as diretory instead of only checking the basedir.
+    """
+
+    if not isinstance(paths, list):
+        paths = [paths]
+    for path in paths:
+        if isdir and path != "" and not os.path.exists(path):
+            os.makedirs(path)
+        elif os.path.dirname(path) != "" and not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
+        if verbose:
+            log.info(f"Output path: {path}")
