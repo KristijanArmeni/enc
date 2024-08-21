@@ -21,25 +21,27 @@ CACHE_DIR = Path(cfg["CACHE_DIR"])
 
 
 def load_envelope_data(
-    story: str, tr_len: float = 2.0, use_cache: bool = True
+    story: str,
+    tr_len: float,
+    y_data: np.ndarray,
+    use_cache: bool = True,
 ) -> np.ndarray:
     path_cache_x = Path(CACHE_DIR, "envelope_data", f"{story}_{tr_len}_X.npy")
     if Path.exists(path_cache_x) and use_cache:
         log.info(f"Loading from cache: {path_cache_x}")
         return np.load(path_cache_x)
+    elif use_cache:
+        log.info(f"No data found in cache: {path_cache_x}")
 
-    log.info(f"No data found in cache: {path_cache_x}")
+    n_trs = y_data.shape[0]
 
     sfreq, wav_data = load_wav(story)
-
-    fmri_sfreq = 1 / tr_len
-    scaling_factor = sfreq / fmri_sfreq
 
     wav_data = np.mean(wav_data, axis=1)
 
     X_envelope = get_envelope(wav_data)
     X_trimmed = trim(X_envelope, sfreq)
-    X_data = downsample(X_trimmed, scaling_factor)
+    X_data = downsample(X_trimmed, sfreq, tr_len, n_trs)
     X_data = X_data[:, np.newaxis]
 
     if use_cache:
@@ -106,9 +108,12 @@ def do_regression(
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         elif predictor == "envelope":
-            X_data = load_envelope_data(story, tr_len, use_cache)
+            X_data = load_envelope_data(story, tr_len, y_data, use_cache)
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
+        assert (
+            X_data.shape[0] == y_data.shape[0]
+        ), f"ERROR loading {story}: X {X_data.shape} and y {y_data.shape} do not match up"
         X_data_list.append(X_data)
         y_data_list.append(y_data)
 
@@ -126,7 +131,8 @@ def do_regression(
     if show_results:
         plt.plot(mean_scores)
         plt.show()
-    log.info(f"Mean correlation (r): {mean_scores.mean()}")
+    log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
+    log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
 
     vol_data = cortex.Volume(
         mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"

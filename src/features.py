@@ -21,10 +21,19 @@ def trim(signal: np.ndarray, sfreq: int, duration: float = 10.0) -> np.ndarray:
     return signal[int(sfreq * duration) : int(-sfreq * duration)]
 
 
-def downsample(signal: np.ndarray, factor: float) -> np.ndarray:
-    num = int(signal.shape[0] / factor)
-    log.info(f"Downsampling to {num} samples.")
-    return resample(signal, num=num)  # type: ignore
+def downsample(
+    signal: np.ndarray, sfreq: float, tr_len: float, n_trs: int
+) -> np.ndarray:
+    num_samples_uncorrected = signal.shape[0] / (sfreq * tr_len)
+    # sometimes the signal samples do not match with the trs
+    # either have to correct the number of resulting samples up or down
+    # rounding won't work (`undertheinfluence`` vs `naked`)
+    if num_samples_uncorrected > n_trs:
+        num_samples = int(np.floor(num_samples_uncorrected))
+    else:
+        num_samples = int(np.ceil(num_samples_uncorrected))
+    log.info(f"Downsampling to {num_samples} samples.")
+    return resample(signal, num=num_samples)  # type: ignore
 
 
 # these tokens were defined in:
