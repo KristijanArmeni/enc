@@ -1,6 +1,8 @@
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
+from random import choices
 from typing import List, Optional, Union
 
 import numpy as np
@@ -187,3 +189,12 @@ def check_make_dirs(
             os.makedirs(os.path.dirname(path))
         if verbose:
             log.info(f"Output path: {path}")
+
+
+def create_run_folder_name() -> str:
+    """Returns the name of the run folder including
+    a random id and the current date."""
+
+    date = datetime.today().strftime("%Y-%m-%d_%H-%M")
+    rand_num = "".join(choices("0123456789", k=6))
+    return f"{date}_{rand_num}"

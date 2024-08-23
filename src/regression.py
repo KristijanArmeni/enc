@@ -40,7 +40,9 @@ def cross_validation_ridge_regression(
     n_splits: int,
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
     alphas: np.ndarray = np.logspace(-3, 3, 7),
-) -> Tuple[np.ndarray, List[np.ndarray], List[np.ndarray], Union[float, np.ndarray]]:
+) -> Tuple[
+    np.ndarray, List[np.ndarray], List[np.ndarray], List[Union[float, np.ndarray]]
+]:
     """Cross validate ridge regression
 
     Parameters
@@ -64,6 +66,7 @@ def cross_validation_ridge_regression(
 
     all_scores = []
     all_weights = []
+    best_alphas = []
     for fold, (train_indices, test_indices) in enumerate(kf.split(X_data_list)):  # type: ignore
         log.info(f"Fold {fold}")
         X_train_list = [X_data_list[i] for i in train_indices]
@@ -88,7 +91,7 @@ def cross_validation_ridge_regression(
 
         clf = RidgeCV(alphas=alphas, alpha_per_target=True)
         clf.fit(X_train, y_train)
-        best_alpha = clf.alpha_
+        best_alphas.append(clf.alpha_)
 
         y_predict = clf.predict(X_test)
         fold_scores = score_fct(y_test, y_predict)
@@ -98,4 +101,4 @@ def cross_validation_ridge_regression(
 
     mean_scores = np.mean(all_scores, axis=0)
 
-    return mean_scores, all_scores, all_weights, best_alpha
+    return mean_scores, all_scores, all_weights, best_alphas

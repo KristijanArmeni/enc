@@ -1,25 +1,30 @@
 import argparse
 import json
 import os
+from collections import defaultdict
+from functools import partial
 
 import numpy as np
 
 from main import do_regression
-from plot import plot_aggregate_results
-from utils import check_make_dirs
+from utils import check_make_dirs, create_run_folder_name
 
-BASE_DIR = "data/mean_scores"
-BASE_DIR_RESULTS = "data/results_max"
+RUNS_DIR = "data/runs"
 
 
 def run_all(
     subject: str,
     n_delays: int,
     predictor: str = "all",
-    plot_results: bool = True,
+    n_train_stories_list: list[int] = [1, 3],
 ):
     """Runs multiple encoding models with increasing amounts of training data
     and plots the outputs.
+
+    The outputs are saved in the `data` dir in following structure
+    data/runs/<date>-<id>/<predictor>/<subject>/<n_training_stories>/<shuffle>/<results>
+    whereas results are:
+        - mean_scores.npy : the mean scores across folds
 
     Parameters
     ----------
@@ -33,8 +38,6 @@ def run_all(
     predictor : {"all", "envelope", "embeddings"}
         Run both predictors (default), or only encoding model with the envelope or
         embeddings predictor.
-    plot_results : bool, optional
-        Whether to plot the results or not.
     """
 
     if predictor == "all":
@@ -42,82 +45,70 @@ def run_all(
     else:
         predictors = [predictor]
 
-    # envelope
-    results_agg = {}
+    # handle data folder
+    folder_name = create_run_folder_name()
+    base_dir = os.path.join(RUNS_DIR, folder_name)
+    check_make_dirs(base_dir, isdir=True)
+
+    # log all parameters
+    # config = {
+    #     "subject": subject,
+    #     "n_delays": n_delays,
+    #     "predictor": predictor,  # command line argument
+    #     "predictors": predictors,  # actual predictors ran
+    # }
+
+    # aggregate overall max correlations and continously update in json
+    results_max_agg = defaultdict(
+        partial(defaultdict, partial(defaultdict, dict))
+    )  # enables instantiating hierarchy of dicts without manually creating them at each level.
+    results_max_path = os.path.join(base_dir, "results_max.json")
     for current_predictor in predictors:
         for shuffle in [False, True]:
-            # Handle output paths
-            base_path = f"{BASE_DIR}/{subject}_{current_predictor}_{n_delays}"
-            check_make_dirs(BASE_DIR, isdir=True)  # make sure dir exists
-            base_path_results = (
-                f"{BASE_DIR_RESULTS}/{subject}_{current_predictor}_{n_delays}"
-            )
-            check_make_dirs(BASE_DIR_RESULTS, isdir=True)
+            shuffle_str = "shuffled" if shuffle else "not_shuffled"
+            for n_train_stories in n_train_stories_list:
+                output_dir = os.path.join(
+                    base_dir,
+                    current_predictor,
+                    subject,
+                    str(n_train_stories),
+                    shuffle_str,
+                )
+                check_make_dirs(output_dir, verbose=False, isdir=True)
+                mean_scores, all_scores, all_weights, best_alphas = do_regression(
+                    current_predictor,
+                    n_stories=n_train_stories + 1,
+                    subject=subject,
+                    n_delays=n_delays,
+                    show_results=False,
+                    shuffle=shuffle,
+                )
+                np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
+                for idx_fold, (scores_fold, weights_fold, best_alpha) in enumerate(
+                    zip(all_scores, all_weights, best_alphas)
+                ):
+                    output_dir_fold = os.path.join(output_dir, f"fold_{idx_fold}")
+                    check_make_dirs(output_dir_fold, verbose=False, isdir=True)
+                    np.save(
+                        os.path.join(output_dir_fold, "scores.npy"),
+                        scores_fold,
+                    )
+                    np.save(
+                        os.path.join(output_dir_fold, "weights.npy"),
+                        weights_fold,
+                    )
+                    np.save(
+                        os.path.join(output_dir_fold, "best_alphas.npy"),
+                        np.array(best_alpha),
+                    )
 
-            if shuffle:
-                base_path += "_shuffled"
-                base_path_results += "_shuffled"
+                results_max_agg[current_predictor][subject][n_train_stories][
+                    shuffle_str
+                ] = mean_scores.max()
 
-            mean_scores_train1 = do_regression(
-                current_predictor,
-                n_stories=2,
-                subject=subject,
-                n_delays=n_delays,
-                show_results=False,
-                shuffle=shuffle,
-            )
-            np.save(f"{base_path}_train1.npy", mean_scores_train1)
-            mean_scores_train3 = do_regression(
-                current_predictor,
-                n_stories=4,
-                subject=subject,
-                n_delays=n_delays,
-                show_results=False,
-                shuffle=shuffle,
-            )
-            np.save(f"{base_path}_train3.npy", mean_scores_train3)
-            mean_scores_train5 = do_regression(
-                current_predictor,
-                n_stories=6,
-                subject=subject,
-                n_delays=n_delays,
-                show_results=False,
-                shuffle=shuffle,
-            )
-            np.save(f"{base_path}_train5", mean_scores_train5)
-            mean_scores_train10 = do_regression(
-                current_predictor,
-                n_stories=11,
-                subject=subject,
-                n_delays=n_delays,
-                show_results=False,
-                shuffle=shuffle,
-            )
-            np.save(f"{base_path}_train10.npy", mean_scores_train10)
-
-            results_key = current_predictor
-            if shuffle:
-                results_key += "_shuffled"
-            results_max = {
-                results_key: {
-                    "1": mean_scores_train1.max(),
-                    "3": mean_scores_train3.max(),
-                    "5": mean_scores_train5.max(),
-                    "10": mean_scores_train10.max(),
-                }
-            }
-            with open(f"{base_path_results}.json", "w") as f_out:
-                json.dump(results_max, f_out, indent=4)
-
-            results_agg.update(results_max)
-
-    if plot_results:
-        output_path = os.path.join(
-            "data",
-            "plots",
-            f"{subject}_run_{predictor}_delays_{n_delays}.png",
-        )
-        plot_aggregate_results(results_agg, output_path, show_plot=True)
+                # update results file
+                with open(results_max_path, "w") as f_out:
+                    json.dump(results_max_agg, f_out, indent=4)
 
 
 if __name__ == "__main__":

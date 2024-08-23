@@ -1,6 +1,7 @@
 import argparse
 import os
 from pathlib import Path
+from typing import Union
 
 import cortex
 import numpy as np
@@ -106,7 +107,9 @@ def do_regression(
     show_results: bool = True,
     shuffle: bool = False,
     interpolation: str = "lanczos",
-) -> np.ndarray:
+) -> tuple[
+    np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
+]:
     n_splits = n_stories
 
     X_data_list = []
@@ -144,7 +147,7 @@ def do_regression(
         mean_scores,
         all_scores,
         all_weights,
-        best_alpha,
+        best_alphas,
     ) = cross_validation_ridge_regression(
         X_data_list, y_data_list, n_splits=n_splits, score_fct=score_correlation
     )
@@ -171,7 +174,7 @@ def do_regression(
         )
         # without print statement the plot does not show up.
         print("Done")
-    return mean_scores
+    return mean_scores, all_scores, all_weights, best_alphas
 
 
 if __name__ == "__main__":
