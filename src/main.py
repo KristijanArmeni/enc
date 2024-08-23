@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from data import load_fmri, load_wav
 from features import downsample, get_embeddings, get_envelope, trim
 from regression import cross_validation_ridge_regression, score_correlation
-from utils import get_logger, load_config, make_delayed
+from utils import get_logger, lanczosinterp2D, load_config, make_delayed
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -82,6 +82,20 @@ def load_sm1000_data(
     return X_data
 
 
+def downsample_embeddings_lanczos(
+    embeddings: np.ndarray,
+    starts: np.ndarray,
+    stops: np.ndarray,
+    n_trs: int,
+    tr_len: float,
+    start_trim: float = 10.0,
+) -> np.ndarray:
+    word_times = (starts + stops) / 2
+    tr_times = np.arange(n_trs) * tr_len + start_trim
+    downsampled_embeddings = lanczosinterp2D(embeddings, word_times, tr_times, window=3)
+    return downsampled_embeddings
+
+
 def do_regression(
     predictor: str = "embeddings",
     n_stories: int = 5,
@@ -91,6 +105,7 @@ def do_regression(
     n_delays: int = 4,
     show_results: bool = True,
     shuffle: bool = False,
+    interpolation: str = "lanczos",
 ) -> np.ndarray:
     n_splits = n_stories
 
@@ -104,7 +119,13 @@ def do_regression(
             y_data = np.random.permutation(y_data)
 
         if predictor == "embeddings":
-            X_data = load_sm1000_data(story, tr_len, y_data)
+            if interpolation == "lanczos":
+                data, starts, stops = get_embeddings(story)
+                X_data = downsample_embeddings_lanczos(
+                    data, starts, stops, y_data.shape[0], tr_len
+                )
+            elif interpolation == "average":
+                X_data = load_sm1000_data(story, tr_len, y_data)
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         elif predictor == "envelope":
@@ -174,6 +195,12 @@ if __name__ == "__main__":
         "--not_use_cache",
         action="store_true",
         help="Disable cache for feature commputation.",
+    )
+    parser.add_argument(
+        "--interpolation_method",
+        default="lanczos",
+        choices=["lanczos", "average"],
+        help="Interpolation method for embeddings.",
     )
     parser.add_argument(
         "--n_delays",
