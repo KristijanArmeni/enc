@@ -4,7 +4,7 @@ module for loading fMRI data and features and the like
 
 import re
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 import h5py
 import numpy as np
@@ -187,7 +187,7 @@ def get_tier_data(text_grid_lines: list) -> dict:
     return {n: d for n, d in zip(tier_names, [phone_dict, word_dict])}
 
 
-def load_textgrid(story: str) -> dict[pd.DataFrame, pd.DataFrame]:
+def load_textgrid(story: str) -> dict[str, pd.DataFrame]:
 
     textgrid_dir = DATADIR / "derivative" / "TextGrids"
     fn = textgrid_dir / f"{story}.TextGrid"
@@ -197,12 +197,12 @@ def load_textgrid(story: str) -> dict[pd.DataFrame, pd.DataFrame]:
 
     tiers_dict = get_tier_data(lines)
 
-    out = {n: None for n in tiers_dict.keys()}
+    out: dict[str, Optional[pd.DataFrame]] = {n: None for n in tiers_dict.keys()}
 
     out["phone"] = pd.DataFrame(tiers_dict["phone"], columns=tiers_dict["phone"].keys())
     out["word"] = pd.DataFrame(tiers_dict["word"], columns=tiers_dict["word"].keys())
 
-    return out
+    return out  # type: ignore
 
 
 def load_fmri(story: str, subject: str) -> np.ndarray:
@@ -214,7 +214,7 @@ def load_fmri(story: str, subject: str) -> np.ndarray:
     log.info(
         f"{story}.hf5"
         f" | {subject}"
-        f" | time: {hf['data'].shape[0]}"
-        f" | voxels: {hf['data'].shape[1]}"
+        f" | time: {hf['data'].shape[0]}"  # type: ignore
+        f" | voxels: {hf['data'].shape[1]}"  # type: ignore
     )
     return np.array(hf["data"][:])  # type: ignore
