@@ -5,13 +5,9 @@ The encoders
 ## Setup
 
 ```sh
-# setup up virtual env
-conda create -n enc python=3.9
+# setup up conda environment and install git-annex
+conda create -n enc python=3.9 conda-forge::git-annex
 conda activate enc
-
-# Install git-annex for data download (does not have to be with brew)
-brew install git-annex
-brew services start git-annex
 
 # install dependencies
 pip install -r requirements.txt
