@@ -83,6 +83,84 @@ def make_delayed(signal: np.ndarray, delays: np.ndarray, circpad=False) -> np.nd
     return np.hstack(delayed_signals)
 
 
+def sinc(f_c, t):
+    """
+    Sin function with cutoff frequency f_c.
+
+    Parameters
+    -----------
+    f_c : int
+        Cutoff frequency
+    t : np.ndarray or float
+        Time
+
+    Returns
+    --------
+    np.ndarray or float
+        Sin function with cutoff frequency f_c
+    """
+    return np.sin(2 * np.pi * f_c * t) / (2 * np.pi * f_c * t)
+
+
+def lanczosfun(f_c, t, a=3):
+    """
+    Lanczos function with cutoff frequency f_c.
+
+    Parameters
+    -----------
+    f_c : int
+        Cutoff frequency
+    t : np.ndarray or float
+        Time
+    a : int
+        Number of lobes (window size); only signals within the window will have non-zero weights.
+
+    Returns
+    --------
+    np.ndarray or float
+        Lanczos function with cutoff frequency f_c
+    """
+    val = sinc(f_c, t) * sinc(f_c, t / a)
+    val[t == 0] = 1.0
+    val[np.abs(t) > a] = 0.0
+
+    return val
+
+
+def lanczosinterp2D(signal, oldtime, newtime, window=3, cutoff_mult=1.0):
+    """
+    Lanczos interpolation for 2D signals; interpolates [signal] from [oldtime] to [newtime], assuming that the rows of [signal] correspond to [oldtime]. Returns a new signal with rows corresponding to [newtime] and the same number of columns as [signal].
+
+    Parameters
+    -----------
+    signal : np.ndarray
+        2-D array of shape (n_samples, n_features)
+    oldtime : np.ndarray
+        1-D array of old time points
+    newtime : np.ndarray
+        1-D array of new time points
+    window : int
+        Number of lobes (window size) for the Lanczos function
+    cutoff_mult : float
+        Multiplier for the cutoff frequency
+
+    Returns
+    --------
+    np.ndarray
+        2-D array of shape (len(newtime), n_features)
+    """
+    # Find the cutoff frequency
+    f_c = 1 / (2 * np.max(np.abs(np.diff(newtime)))) * cutoff_mult
+    # Build the Lanczos interpolation matrix
+    interp_matrix = np.zeros((len(newtime), len(oldtime)))
+    for i, t in enumerate(newtime):
+        interp_matrix[i, :] = lanczosfun(f_c, t - oldtime, a=window)
+    # Interpolate the signal
+    newsignal = np.dot(interp_matrix, signal)
+
+    return newsignal
+
+
 def check_make_dirs(
     paths: Union[str, List[str]],
     verbose: bool = True,
