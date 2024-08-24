@@ -102,11 +102,11 @@ def do_regression(
     n_stories: int = 5,
     subject: str = "UTS02",
     tr_len: float = 2.0,
-    use_cache: bool = True,
     n_delays: int = 4,
+    interpolation: str = "lanczos",
+    use_cache: bool = True,
     show_results: bool = True,
     shuffle: bool = False,
-    interpolation: str = "lanczos",
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
 ]:
