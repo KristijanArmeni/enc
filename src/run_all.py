@@ -7,16 +7,16 @@ from functools import partial
 import numpy as np
 
 from main import do_regression
-from utils import check_make_dirs, create_run_folder_name
+from utils import ROOT, check_make_dirs, create_run_folder_name
 
-RUNS_DIR = "data/runs"
+RUNS_DIR = ROOT / "data" / "runs"
 
 
 def run_all(
     subject: str,
     n_delays: int,
     predictor: str = "all",
-    n_train_stories_list: list[int] = [1, 3],
+    n_train_stories_list: list[int] = [1, 4],
 ):
     """Runs multiple encoding models with increasing amounts of training data
     and plots the outputs.
@@ -146,4 +146,8 @@ if __name__ == "__main__":
         help="Which predictors to run",
     )
     args = parser.parse_args()
-    run_all(args.subject, args.n_delays)
+    run_all(
+        subject=args.subject,
+        n_delays=args.n_delays,
+        predictor=args.predictor,
+    )
