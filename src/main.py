@@ -158,10 +158,11 @@ def do_regression(
     log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
     log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
 
-    vol_data = cortex.Volume(
-        mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
-    )
     if show_results:
+        vol_data = cortex.Volume(
+            mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
+        )
+
         cortex.quickshow(vol_data)
         plt.title(f"{subject} {predictor} performance.")
         plt.show()
