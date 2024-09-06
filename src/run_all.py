@@ -8,11 +8,11 @@ from typing import Union
 import numpy as np
 
 from main import do_regression
-from utils import check_make_dirs, create_run_folder_name, get_logger
+from utils import ROOT, check_make_dirs, create_run_folder_name, get_logger
 
 log = get_logger(__name__)
 
-RUNS_DIR = "data/runs"
+RUNS_DIR = ROOT / "data" / "runs"
 
 
 def run_all(
