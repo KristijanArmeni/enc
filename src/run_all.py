@@ -17,7 +17,7 @@ RUNS_DIR = ROOT / "data" / "runs"
 
 def run_all(
     subject: Union[str, list[str]] = "UTS02",
-    n_train_stories: Union[int, list[int]] = [1, 3],
+    n_train_stories: Union[int, list[int]] = [1, 4],
     predictor: Union[str, list[str]] = "all",
     n_delays: int = 5,
     interpolation: str = "lanczos",
