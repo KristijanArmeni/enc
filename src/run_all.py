@@ -202,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--interpolation",
         type=str,
-        choices={"lanczos", "average"},
+        choices=["lanczos", "average"],
         default="lanczos",
         help="Interpolation method used for embeddings predictor.",
     )
