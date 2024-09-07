@@ -1,7 +1,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import cortex
 import numpy as np
@@ -99,7 +99,7 @@ def downsample_embeddings_lanczos(
 
 def do_regression(
     predictor: str = "embeddings",
-    n_stories: int = 5,
+    n_stories: Optional[int] = None,
     subject: str = "UTS02",
     tr_len: float = 2.0,
     n_delays: int = 4,
@@ -107,15 +107,51 @@ def do_regression(
     use_cache: bool = True,
     show_results: bool = True,
     shuffle: bool = False,
+    stories: list[str] = STORIES,
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
 ]:
+    """Runs regression.
+
+    Parameters
+    ----------
+    predictor : {"envelope", "embeddings", "embeddings_huth"}
+        Which predictor to use for the regression. "envelope": audio envelope that
+        participants heard. "embeddings": embeddings computed from the words that
+        participants heard. "embeddings_huth": embeddings which were used in the
+        huth paper (https://www.nature.com/articles/s41597-023-02437-z)
+    n_stories: int, optional
+        The , if this is `None` will use all stories.
+    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}, default="UTS02"
+        Subject identifier
+    tr_len: float, default=2.0
+        Length of tr-windows used to sample fMRI data.
+    n_delays: int, default=4
+        How many delays are used to model the HRF, which is modeled by adding
+        a shifted set of duplicated features for each delay. `n_delays=5` implies
+        that the the features of the stimulus are shifted concatinated 5 times
+        to training/testing data.
+    interpolation: {"lanczos", "average"}, default="lanczos"
+        Whether to use lanczos interpolation or just average the words within a TR.
+        Only applies to the 'embeddings' predictor.
+    use_cache: bool, default=True
+        Whether the cache is used for `envelope` features.
+    show_results: bool, default=True
+        Create a plot showing the results in pycortex.
+    shuffle: bool, default=False
+        Whether to shuffle the predictors (features).
+    stories: list[str] = STORIES,
+    """
+
+    if n_stories is None:
+        n_stories = len(stories)
+    else:
+        stories = stories[:n_stories]
     n_splits = n_stories
 
     X_data_list = []
     y_data_list = []
-    for story_id in range(n_stories):
-        story = STORIES[story_id]
+    for story in stories:
 
         y_data = load_fmri(story, subject)
         if shuffle:
