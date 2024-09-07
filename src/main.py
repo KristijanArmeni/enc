@@ -135,6 +135,9 @@ def do_regression(
             X_data = load_envelope_data(story, tr_len, y_data, use_cache)
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
+        elif predictor == "embeddings_huth":
+            X_data = np.load(f"/Volumes/opt/enc/data/embeddings_huth/{story}.npy")
+
         assert (
             X_data.shape[0] == y_data.shape[0]
         ), f"ERROR loading {story}: X {X_data.shape} and y {y_data.shape} do not match up"
@@ -181,7 +184,9 @@ def do_regression(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A program to run a ")
     parser.add_argument(
-        "predictor", choices=["embeddings", "envelope"], help="The predictor"
+        "predictor",
+        choices=["embeddings", "envelope", "embeddings_huth"],
+        help="The predictor",
     )
     parser.add_argument(
         "--n_stories",
