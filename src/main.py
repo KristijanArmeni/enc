@@ -173,6 +173,7 @@ def do_regression(
 
         elif predictor == "embeddings_huth":
             X_data = np.load(f"/Volumes/opt/enc/data/embeddings_huth/{story}.npy")
+            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         assert (
             X_data.shape[0] == y_data.shape[0]

@@ -39,7 +39,7 @@ def cross_validation_ridge_regression(
     y_data_list: List[np.ndarray],
     n_splits: int,
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
-    alphas: np.ndarray = np.logspace(-3, 3, 7),
+    alphas: np.ndarray = np.logspace(1, 3, 10),
 ) -> Tuple[
     np.ndarray, List[np.ndarray], List[np.ndarray], List[Union[float, np.ndarray]]
 ]:
@@ -75,19 +75,15 @@ def cross_validation_ridge_regression(
         y_test_list = [y_data_list[i] for i in test_indices]
 
         X_train_unnormalized = np.concatenate(X_train_list, axis=0)
-        y_train_unnormalized = np.concatenate(y_train_list, axis=0)
+        y_train = np.concatenate(y_train_list, axis=0)
         X_test_unnormalized = np.concatenate(X_test_list, axis=0)
-        y_test_unnormalized = np.concatenate(y_test_list, axis=0)
+        y_test = np.concatenate(y_test_list, axis=0)
 
         X_means = X_train_unnormalized.mean(axis=0)
-        y_means = y_train_unnormalized.mean(axis=0)
-        X_stds = X_train_unnormalized.mean(axis=0)
-        y_stds = y_train_unnormalized.mean(axis=0)
+        X_stds = X_train_unnormalized.std(axis=0)
 
         X_train = z_score(X_train_unnormalized, X_means, X_stds)
-        y_train = z_score(y_train_unnormalized, y_means, y_stds)
         X_test = z_score(X_test_unnormalized, X_means, X_stds)
-        y_test = z_score(y_test_unnormalized, y_means, y_stds)
 
         clf = RidgeCV(alphas=alphas, alpha_per_target=True)
         clf.fit(X_train, y_train)
