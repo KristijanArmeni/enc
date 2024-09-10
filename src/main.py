@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from data import load_fmri, load_wav
 from features import downsample, get_embeddings, get_envelope, trim
 from regression import cross_validation_ridge_regression, score_correlation
-from utils import get_logger, lanczosinterp2D, load_config, make_delayed
+from utils import get_logger, lanczosinterp2D_huth, load_config, make_delayed
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -92,8 +92,10 @@ def downsample_embeddings_lanczos(
     start_trim: float = 10.0,
 ) -> np.ndarray:
     word_times = (starts + stops) / 2
-    tr_times = np.arange(n_trs) * tr_len + start_trim
-    downsampled_embeddings = lanczosinterp2D(embeddings, word_times, tr_times, window=3)
+    tr_times = np.arange(n_trs) * tr_len + start_trim + tr_len / 2.0
+    downsampled_embeddings = lanczosinterp2D_huth(
+        embeddings, word_times, tr_times, window=3
+    )
     return downsampled_embeddings
 
 

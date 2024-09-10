@@ -163,6 +163,62 @@ def lanczosinterp2D(signal, oldtime, newtime, window=3, cutoff_mult=1.0):
     return newsignal
 
 
+def lanczosfun_huth(cutoff, t, window=3):
+    """Compute the lanczos function with some cutoff frequency [B] at some time [t].
+    [t] can be a scalar or any shaped numpy array.
+    If given a [window], only the lowest-order [window] lobes of the sinc function
+    will be non-zero.
+
+    COPY from Huth-lab: https://github.com/HuthLab/deep-fMRI-dataset/blob/master/encoding/ridge_utils/interpdata.py
+    """
+    t = t * cutoff
+    val = window * np.sin(np.pi * t) * np.sin(np.pi * t / window) / (np.pi**2 * t**2)
+    val[t == 0] = 1.0
+    val[np.abs(t) > window] = 0.0
+    return val  # / (val.sum() + 1e-10)
+
+
+def lanczosinterp2D_huth(
+    data, oldtime, newtime, window=3, cutoff_mult=1.0, rectify=False
+):
+    """Interpolates the columns of [data], assuming that the i'th row of data corresponds to
+    oldtime(i). A new matrix with the same number of columns and a number of rows given
+    by the length of [newtime] is returned.
+
+    The time points in [newtime] are assumed to be evenly spaced, and their frequency will
+    be used to calculate the low-pass cutoff of the interpolation filter.
+
+    [window] lobes of the sinc function will be used. [window] should be an integer.
+
+    COPY FROM Huth-lab: https://github.com/HuthLab/deep-fMRI-dataset/blob/master/encoding/ridge_utils/interpdata.py
+    """
+    # data : ndarray [n_words, embed_dim] embedding vectors
+    # oldtime : ndarray [n_words] middle time of word occurance
+    # newtime : ndarray [n_trs] middle time of tr
+    # others are standard
+    # Find the cutoff frequency #
+    cutoff = 1 / np.mean(np.diff(newtime)) * cutoff_mult
+    # print "Doing lanczos interpolation with cutoff=%0.3f and %d lobes." % (cutoff, window)
+
+    # Build up sinc matrix #
+    sincmat = np.zeros((len(newtime), len(oldtime)))
+    for ndi in range(len(newtime)):
+        sincmat[ndi, :] = lanczosfun_huth(cutoff, newtime[ndi] - oldtime, window)
+
+    if rectify:
+        newdata = np.hstack(
+            [
+                np.dot(sincmat, np.clip(data, -np.inf, 0)),
+                np.dot(sincmat, np.clip(data, 0, np.inf)),
+            ]
+        )
+    else:
+        # Construct new signal by multiplying the sinc matrix by the data #
+        newdata = np.dot(sincmat, data)
+
+    return newdata
+
+
 def check_make_dirs(
     paths: Union[str, List[str]],
     verbose: bool = True,
