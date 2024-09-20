@@ -82,10 +82,15 @@ def get_tier_data(text_grid_lines: list) -> dict:
                     xmax = 3.348726528529025
         """
 
-        def find_tiers(tier_array: np.ndarray):
-            starttimes = tier_array[1::4]
-            stoptimes = tier_array[2::4]
-            textstrings = tier_array[3::4]
+        def find_tiers(tier_array: np.ndarray, is_long: bool):
+            if is_long:
+                starttimes = tier_array[1::4]
+                stoptimes = tier_array[2::4]
+                textstrings = tier_array[3::4]
+            else:
+                starttimes = tier_array[0::3]
+                stoptimes = tier_array[1::3]
+                textstrings = tier_array[2::3]
 
             starttimes = [float(e.strip("xmin = ").strip()) for e in starttimes]
             stoptimes = [float(e.strip("xmax = ").strip()) for e in stoptimes]
@@ -97,8 +102,8 @@ def get_tier_data(text_grid_lines: list) -> dict:
 
             return starttimes, stoptimes, textstrings
 
-        start = float(text_grid_lines[3].strip("xmin = ").strip())
-        stop = float(text_grid_lines[4].strip("xmax = ").strip())
+        # check if it is a long or short TextGrid format
+        is_long = "xmin = " in lines[3]  # xmin = 0.3 (long), just float is short
 
         # find mathc using re.match
         start = float(lines[3].strip("xmin = ").strip())
@@ -112,27 +117,48 @@ def get_tier_data(text_grid_lines: list) -> dict:
         tier_names = {}
         tier_n = []
         tier_starts = []
-        for i, line in enumerate(lines):
-            if re.match(r'class = "IntervalTier"', line):
-                interval_tiers.append(i)
-            if re.match(r"name = ", line):
-                name = line.split('"')[1]
-                tier_names[name] = i
-            if re.match(r"intervals: size = ", line):
-                tier_n.append(int(line.split(" ")[-1]))
-                tier_starts.append(i + 1)
+        if is_long:
+            for i, line in enumerate(lines):
+                if re.match(r'class = "IntervalTier"', line):
+                    interval_tiers.append(i)
+                if re.match(r"name = ", line):
+                    name = line.split('"')[1]
+                    tier_names[name] = i
+                if re.match(r"intervals: size = ", line):
+                    tier_n.append(int(line.split(" ")[-1]))
+                    tier_starts.append(i + 1)
 
-        # find which lines correspond to which tier
-        phone_start, word_start = tier_starts
-        phone_stop = phone_start + tier_n[0] * 4
-        word_stop = word_start + tier_n[1] * 4
-        phone_tier = np.array(lines[phone_start:phone_stop])
-        word_tier = np.array(lines[word_start:word_stop])
+                    # find which lines correspond to which tier
+            phone_start, word_start = tier_starts
+            phone_stop = phone_start + tier_n[0] * 4
+            word_stop = word_start + tier_n[1] * 4
+            phone_tier = np.array(lines[phone_start:phone_stop])
+            word_tier = np.array(lines[word_start:word_stop])
+        else:
+            interval_tiers = np.where(np.array(lines) == '"IntervalTier"')[0].tolist()
+            tier_names[lines[interval_tiers[0] + 1].replace('"', "")] = interval_tiers[
+                0
+            ]
+            tier_names[lines[interval_tiers[1] + 1].replace('"', "")] = interval_tiers[
+                1
+            ]
+            tier_starts = [i + 5 for i in interval_tiers]
+            tier_n = []
+            for i in interval_tiers:
+                tier_n.append(int(lines[i + 4]))
 
-        phones_start, phones_stop, phones = find_tiers(phone_tier)
+                # find which lines correspond to which tier
+            n_lines_per_entry = 3
+            phone_start, word_start = tier_starts
+            phone_stop = phone_start + (tier_n[0] * n_lines_per_entry)
+            word_stop = word_start + (tier_n[1] * n_lines_per_entry)
+            phone_tier = np.array(lines[phone_start:phone_stop])
+            word_tier = np.array(lines[word_start:word_stop])
+
+        phones_start, phones_stop, phones = find_tiers(phone_tier, is_long)
         phone_dict = {"start": phones_start, "stop": phones_stop, "text": phones}
 
-        words_start, words_stop, words = find_tiers(word_tier)
+        words_start, words_stop, words = find_tiers(word_tier, is_long)
         word_dict = {"start": words_start, "stop": words_stop, "text": words}
 
     elif text_grid_ftype == TEXT_GRID_FORMATS[1]:
