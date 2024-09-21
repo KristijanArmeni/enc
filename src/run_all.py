@@ -16,11 +16,14 @@ RUNS_DIR = load_config()["RUNS_DIR"]
 
 
 def run_all(
-    subject: Union[str, list[str]] = "UTS02",
-    n_train_stories: Union[int, list[int]] = [1, 4],
+    strategy: str = "loocv",
     predictor: Union[str, list[str]] = "all",
+    n_train_stories: Union[int, list[int]] = [1, 3, 5],
+    n_repeats: int = 5,
+    subject: Union[str, list[str]] = "UTS02",
     n_delays: int = 5,
     interpolation: str = "lanczos",
+    use_cache: bool = True,
 ):
     """Runs multiple encoding models with increasing amounts of training data
     and plots the outputs.
@@ -32,14 +35,19 @@ def run_all(
 
     Parameters
     ----------
-    subject : str or list of str
-        Subject identifier
-        Can be one or a list of : {"all", "UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}
-    n_train_stories : int or list of int
-        Amount of training stories, can be one or multiple amounts.
+    strategy : {"loocv", "simple"}, default="loocv"
+        `loocv` uses leave-one-out cross-validation for n_stories. The stories are determined by the
+        order of the `stories` parameter or its default value in `config.yaml`.
+        `simple` computes the regression for a train/test split containing n_stories within each repeat.
+        Stories are sampled randomly for each repeat.
     predictor : {"all", "envelope", "embeddings"}
         Run both predictors (default), or only encoding model with the envelope or
         embeddings predictor.
+    n_train_stories : int or list of int
+        Amount of training stories, can be one or multiple amounts.
+    subject : str or list of str
+        Subject identifier
+        Can be one or a list of : {"all", "UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}
     n_delays : int
         How many delays are used to model the HRF. The HRF is modeled by adding
         a shifted set of duplicated features for each delay. `n_delays=5` implies
@@ -48,6 +56,8 @@ def run_all(
     interpolation : {"lanczos", "average"}
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies to the 'embeddings' predictor.
+    use_cache: bool, default=True
+        Whether the cache is used for `envelope` features.
     """
 
     # put arguments in right format
@@ -119,13 +129,16 @@ def run_all(
                     )
                     check_make_dirs(output_dir, verbose=False, isdir=True)
                     mean_scores, all_scores, all_weights, best_alphas = do_regression(
-                        current_predictor,
-                        n_stories=current_n_train_stories + 1,
+                        strategy=strategy,
+                        predictor=current_predictor,
+                        n_train_stories=current_n_train_stories,
+                        n_repeats=n_repeats,
                         subject=current_subject,
                         n_delays=n_delays,
-                        show_results=False,
-                        shuffle=shuffle,
                         interpolation=interpolation,
+                        use_cache=use_cache,
+                        shuffle=shuffle,
+                        show_results=False,
                     )
                     np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
                     for idx_fold, (scores_fold, weights_fold, best_alpha) in enumerate(
@@ -161,6 +174,42 @@ if __name__ == "__main__":
         description="",
     )
     parser.add_argument(
+        "--strategy",
+        choices=["simple", "loocv"],
+        default="loocv",
+        help=(
+            "Whether to sample train/test n_repeat times (simple) or do"
+            " leave one out cross validation (loocv)"
+        ),
+    )
+    parser.add_argument(
+        "--predictor",
+        nargs="+",
+        type=str,
+        default=["all"],
+        choices=["all", "embeddings", "envelope"],
+        help="Predictor for the encoding model. Can be 'all' or a combination of predictors.",
+    )
+    parser.add_argument(
+        "--n_train_stories",
+        nargs="+",
+        type=int,
+        default=[1, 3, 5],
+        help=(
+            "Only used if `strategy='simple'`."
+            " Amount of training stories, can be one or multiple amounts."
+        ),
+    )
+    parser.add_argument(
+        "--n_repeats",
+        default=5,
+        type=int,
+        help=(
+            "Only used if `strategy='simple'`. Determines how often regression"
+            " is repeated on a different train/test set."
+        ),
+    )
+    parser.add_argument(
         "--subject",
         nargs="+",
         type=str,
@@ -179,21 +228,6 @@ if __name__ == "__main__":
         ],
     )
     parser.add_argument(
-        "--n_train_stories",
-        nargs="+",
-        type=int,
-        default=[1, 3],
-        help="Amount of training stories, can be one or multiple amounts.",
-    )
-    parser.add_argument(
-        "--predictor",
-        nargs="+",
-        type=str,
-        default=["all"],
-        choices=["all", "embeddings", "envelope"],
-        help="Predictor for the encoding model. Can be 'all' or a combination of predictors.",
-    )
-    parser.add_argument(
         "--n_delays",
         type=int,
         default=5,
@@ -206,11 +240,19 @@ if __name__ == "__main__":
         default="lanczos",
         help="Interpolation method used for embeddings predictor.",
     )
+    parser.add_argument(
+        "--no_cache",
+        action="store_true",
+        help="Whether the cache is used for `envelope` features.",
+    )
     args = parser.parse_args()
     run_all(
-        subject=args.subject,
-        n_train_stories=args.n_train_stories,
+        strategy=args.strategy,
         predictor=args.predictor,
+        n_train_stories=args.n_train_stories,
+        n_repeats=args.n_repeats,
+        subject=args.subject,
         n_delays=args.n_delays,
         interpolation=args.interpolation,
+        use_cache=not args.no_cache,
     )

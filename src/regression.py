@@ -1,8 +1,7 @@
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.linear_model import RidgeCV
-from sklearn.model_selection import KFold
 
 from utils import get_logger, load_config
 
@@ -34,67 +33,67 @@ def z_score(data: np.ndarray, means: np.ndarray, stds: np.ndarray) -> np.ndarray
     return (data - means) / (stds + 1e-6)
 
 
-def cross_validation_ridge_regression(
-    X_data_list: List[np.ndarray],
-    y_data_list: List[np.ndarray],
-    n_splits: int,
+def ridge_regression(
+    train_stories: list[str],
+    test_stories: list[str],
+    X_data_dict: dict[str, np.ndarray],
+    y_data_dict: dict[str, np.ndarray],
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
-    alphas: np.ndarray = np.logspace(1, 3, 10),
-) -> Tuple[
-    np.ndarray, List[np.ndarray], List[np.ndarray], List[Union[float, np.ndarray]]
-]:
-    """Cross validate ridge regression
+    alphas: Optional[np.ndarray] = np.logspace(1, 3, 10),
+) -> tuple[np.ndarray, np.ndarray, Union[float, np.ndarray]]:
+    """Runs CVRidgeRegression on given train stories, returns scores for
+    test story, regression weights, and the best alphas.
 
     Parameters
     ----------
-    X_data_list : List[np.ndarray]
-        List of X data as np array for each story
-    y_data_list : List[np.ndarray]
-        List of fmri data as np array for each story.
-        Must be in same order as X_data_list.
-    n_splits : int
-        Cross validation splits
+    train_stories: list of str
+        List of training stories. Stories must be in X_data_dict.
+    test_stories: list of str
+        List of testing stories. Stories must be in X_data_dict.
+    X_data_dict : dict[str, np.ndarray]
+        Dict with story to X_data (features) pairs.
+    y_data_dict : dict[str, np.ndarray]
+        Dict with story to y_data (fMRI data) pairs.
     score_fct : fct(np.ndarray, np.ndarray) -> np.ndarray
         A function taking y_test (shape = (number_trs, n_voxels))
         and y_predict (same shape as y_test) and returning an
-        array with an entry for each voxel (shape = (n_voxels))
-    alphas : np.ndarray
-        Array of alpha values to optimize over
+        array with an entry for each voxel (shape = (n_voxels)).
+    alphas : np.ndarray or `None`, default = `np.logspace(1, 3, 10)`
+        Array of alpha values to optimize over. If `None`, will choose
+        default value.
+
+    Returns
+    -------
+    scores : np.ndarray
+        The prediction scores for the test stories.
+    weights : np.ndarray
+        The regression weights.
+    best_alphas : float | np.ndarray
+        The best alphas for each voxel.
     """
+    if alphas is None:
+        alphas = np.logspace(1, 3, 10)
 
-    kf = KFold(n_splits=n_splits)
+    X_train_list = [X_data_dict[story] for story in train_stories]
+    y_train_list = [y_data_dict[story] for story in train_stories]
+    X_test_list = [X_data_dict[story] for story in test_stories]
+    y_test_list = [y_data_dict[story] for story in test_stories]
 
-    all_scores = []
-    all_weights = []
-    best_alphas = []
-    for fold, (train_indices, test_indices) in enumerate(kf.split(X_data_list)):  # type: ignore
-        log.info(f"Fold {fold}")
-        X_train_list = [X_data_list[i] for i in train_indices]
-        y_train_list = [y_data_list[i] for i in train_indices]
-        X_test_list = [X_data_list[i] for i in test_indices]
-        y_test_list = [y_data_list[i] for i in test_indices]
+    X_train_unnormalized = np.concatenate(X_train_list, axis=0)
+    y_train = np.concatenate(y_train_list, axis=0)
+    X_test_unnormalized = np.concatenate(X_test_list, axis=0)
+    y_test = np.concatenate(y_test_list, axis=0)
 
-        X_train_unnormalized = np.concatenate(X_train_list, axis=0)
-        y_train = np.concatenate(y_train_list, axis=0)
-        X_test_unnormalized = np.concatenate(X_test_list, axis=0)
-        y_test = np.concatenate(y_test_list, axis=0)
+    X_means = X_train_unnormalized.mean(axis=0)
+    X_stds = X_train_unnormalized.std(axis=0)
 
-        X_means = X_train_unnormalized.mean(axis=0)
-        X_stds = X_train_unnormalized.std(axis=0)
+    X_train = z_score(X_train_unnormalized, X_means, X_stds)
+    X_test = z_score(X_test_unnormalized, X_means, X_stds)
 
-        X_train = z_score(X_train_unnormalized, X_means, X_stds)
-        X_test = z_score(X_test_unnormalized, X_means, X_stds)
+    clf = RidgeCV(alphas=alphas, alpha_per_target=True)
+    clf.fit(X_train, y_train)
 
-        clf = RidgeCV(alphas=alphas, alpha_per_target=True)
-        clf.fit(X_train, y_train)
-        best_alphas.append(clf.alpha_)
+    y_predict = clf.predict(X_test)
+    scores = score_fct(y_test, y_predict)
 
-        y_predict = clf.predict(X_test)
-        fold_scores = score_fct(y_test, y_predict)
-
-        all_scores.append(fold_scores)
-        all_weights.append(clf.coef_)
-
-    mean_scores = np.mean(all_scores, axis=0)
-
-    return mean_scores, all_scores, all_weights, best_alphas
+    return scores, clf.coef_, clf.alpha_
