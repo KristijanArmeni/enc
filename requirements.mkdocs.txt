@@ -1,2 +1,2 @@
 mkdocs
-mkdocstrings
+mkdocstrings[python]
