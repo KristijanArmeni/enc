@@ -9,24 +9,44 @@ log = get_logger(__name__)
 cfg = load_config()
 
 
-def score_correlation(y_test, y_predict) -> np.ndarray:
-    """Returns the correlations for each voxel given predicted and true data.
+def zs(x: np.ndarray) -> np.ndarray:
+    """Returns the z-score of the input array. Z-scores along the first dimension for n-dimensional arrays by default.
 
     Parameters
     ----------
-    y_test : np.ndarray
-        shape = (number_trs, n_voxels)
-    y_predict : np.ndarray
-        shape = (number_trs, n_voxels)
+    x : np.ndarray
+        Input array. Can be 1D or n-dimensional.
 
     Returns
     -------
-    np.ndarray
-        shape = (n_voxels)
+    z : np.ndarray
+        Z-score of x.
     """
-    return np.array(
-        [np.corrcoef(y1, y2)[0, 1] for y1, y2 in zip(y_test.T, y_predict.T)]
-    )
+    return (x - x.mean(axis=0)) / (x.std(axis=0) + 1e-6)
+
+
+def pearsonr(x1, x2) -> Union[float, np.ndarray]:
+    """Returns the pearson correlation between two vectors or two matrices of the same shape (in which case the correlation is computed for each pair of column vectors).
+
+    Parameters
+    ----------
+    x1 : np.ndarray
+        shape = (n_samples,) or (n_samples, n_targets)
+    x2 : np.ndarray
+        shape = (n_samples,) or (n_samples, n_targets), same shape as x1
+
+    Returns
+    -------
+    corr: float or np.ndarray
+        Pearson correlation between x1 and x2. If x1 and x2 are matrices, returns an array of correlations with shape (n_targets,)
+    """
+    return np.mean(zs(x1) * zs(x2), axis=0)
+
+
+def pearsonr_scorer(estimator, X, y):
+    """Scorer function for RidgeCV that computes the Pearson correlation between the predicted and true values."""
+    y_predict = estimator.predict(X)
+    return pearsonr(y, y_predict)
 
 
 def z_score(data: np.ndarray, means: np.ndarray, stds: np.ndarray) -> np.ndarray:
@@ -90,7 +110,7 @@ def ridge_regression(
     X_train = z_score(X_train_unnormalized, X_means, X_stds)
     X_test = z_score(X_test_unnormalized, X_means, X_stds)
 
-    clf = RidgeCV(alphas=alphas, alpha_per_target=True)
+    clf = RidgeCV(alphas=alphas, alpha_per_target=True, scoring=pearsonr_scorer)
     clf.fit(X_train, y_train)
 
     y_predict = clf.predict(X_test)
