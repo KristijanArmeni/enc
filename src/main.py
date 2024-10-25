@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 
 from data import load_fmri, load_wav
 from features import downsample, get_embeddings, get_envelope, trim
-from regression import ridge_regression, score_correlation
+from regression import pearsonr, ridge_regression
 from utils import get_logger, lanczosinterp2D, load_config, make_delayed
 
 log = get_logger(__name__)
@@ -194,7 +194,7 @@ def do_loocv_regression(
             test_stories=curr_test_stories,
             X_data_dict=X_data_dict,
             y_data_dict=y_data_dict,
-            score_fct=score_correlation,
+            score_fct=pearsonr,
             alphas=alphas,
         )
         log.info(f"{fold} | Mean corr: {scores.mean()}")
@@ -340,7 +340,7 @@ def do_simple_regression(
             test_stories=curr_test_stories,
             X_data_dict=X_data_dict,
             y_data_dict=y_data_dict,
-            score_fct=score_correlation,
+            score_fct=pearsonr,
         )
         log.info(f"{repeat} | Mean corr: {scores.mean()}")
         log.info(f"{repeat} | Max corr : {scores.max()}")
