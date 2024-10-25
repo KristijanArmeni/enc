@@ -1,6 +1,17 @@
-# enc
+<h1 align="center">Encoding Models</h1>
 
-The encoders
+<p align="center">A project reproducing endocing models published by <a href="https://github.com/HuthLab/deep-fMRI-dataset"><i>LeBel et al. 2023</i></a>.</p>
+
+<p align="center">
+<a href="https://gabrielkp.com/enc/"><img alt="documentation" src="https://img.shields.io/badge/docs-mkdocs-708FCC.svg?style=flat"></a>
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
+---
+
+## Report
+
+We have documented the results of the project in our [encoding report](https://kristijanarmeni.github.io/encoders_report/)
 
 ## Setup
 
@@ -69,3 +80,13 @@ cortex.options.usercfg
 4. To use `quickshow` install inkscape: https://inkscape.org/release/inkscape-1.3.2/
 
 5. Make sure inkscape is available in the terminal. [Instructions Mac](https://stackoverflow.com/a/22085247)
+
+
+## Team
+
+- [Gabriel Kressing Palacios](https://gabrielkp.com/)
+- Gio Li
+- [Kristijan Armeni](https://www.kristijanarmeni.net/)
+
+
+## License
