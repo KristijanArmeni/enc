@@ -13,6 +13,7 @@ nav:
       - "Features": "features.md"
       - "Data": "data.md"
       - "Utils": "utils.md"
+
 theme:
   name: material
   features:
@@ -20,6 +21,7 @@ theme:
     - navigation.sections
     - content.code.copy
     - toc.integrate
+
 plugins:
   - mkdocstrings:
       handlers:
@@ -31,3 +33,6 @@ plugins:
             show_root_full_path: true
             heading_level: 2
             docstring_style: numpy
+
+markdown_extensions:
+  - pymdownx.snippets
