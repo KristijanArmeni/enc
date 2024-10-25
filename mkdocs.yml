@@ -7,20 +7,22 @@ nav:
   - "Report":
       - Intro: https://kristijanarmeni.github.io/encoders_report/report" target="_blank
   - "Documentation":
-      - "Run all": "run_all.md"
-      - "Main": "main.md"
-      - "Regression": "regression.md"
-      - "Features": "features.md"
-      - "Data": "data.md"
-      - "Utils": "utils.md"
+      - "run_all": "run_all.md"
+      - "main": "main.md"
+      - "regression": "regression.md"
+      - "features": "features.md"
+      - "data": "data.md"
+      - "utils": "utils.md"
 
 theme:
   name: material
   features:
+    - navigation.tracking
     - navigation.tabs
+    - navigation.path
     - navigation.sections
     - content.code.copy
-    - toc.integrate
+    # - toc.integrate
 
 plugins:
   - mkdocstrings:
@@ -28,11 +30,15 @@ plugins:
         python:
           paths: [src] # search packages in the src folder
           options:
-            show_root_heading: false
-            show_category_heading: true
+            # show_root_heading: true
+            # show_category_heading: true
+            show_root_toc_entry: false
             show_root_full_path: true
             heading_level: 2
             docstring_style: numpy
+            parameter_headings: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
 
 markdown_extensions:
   - pymdownx.snippets
