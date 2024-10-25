@@ -4,10 +4,14 @@ site_url: https://gabrielkp.com/enc
 repo_url: https://github.com/GabrielKP/enc
 nav:
   - "Home": "index.md"
+  - "Report":
+      - Intro: https://kristijanarmeni.github.io/encoders_report/report" target="_blank
   - "Documentation":
-      - "Data": "data.md"
-      - "Features": "features.md"
+      - "Run all": "run_all.md"
+      - "Main": "main.md"
       - "Regression": "regression.md"
+      - "Features": "features.md"
+      - "Data": "data.md"
       - "Utils": "utils.md"
 theme:
   name: material
