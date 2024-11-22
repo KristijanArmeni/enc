@@ -5,7 +5,7 @@ repo_url: https://github.com/GabrielKP/enc
 nav:
   - "Home": "index.md"
   - "Report":
-      - Intro: https://kristijanarmeni.github.io/encoders_report/report" target="_blank
+      - Intro: https://kristijanarmeni.github.io/encoders_report" target="_blank
   - "Documentation":
       - "run_all": "run_all.md"
       - "main": "main.md"

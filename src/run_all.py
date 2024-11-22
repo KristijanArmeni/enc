@@ -16,7 +16,7 @@ RUNS_DIR = load_config()["RUNS_DIR"]
 
 
 def run_all(
-    strategy: str = "loocv",
+    strategy: str = "simple",
     predictor: Union[str, list[str]] = "all",
     n_train_stories: Union[int, list[int]] = [1, 3, 5],
     n_repeats: int = 5,
@@ -25,39 +25,49 @@ def run_all(
     interpolation: str = "lanczos",
     use_cache: bool = True,
 ):
-    """Runs multiple encoding models with increasing amounts of training data
-    and plots the outputs.
+    """Runs encoding models n_repeat times and saves results data/runs to disk.
 
-    The outputs are saved in the `data` dir in following structure
-    data/runs/<date>-<id>/<predictor>/<subject>/<n_training_stories>/<shuffle>/<results>
-    whereas results are:
-        - mean_scores.npy : the mean scores across folds
+    The following outputs are saved:
+    0. params.json : the parameters for the run
+        `data/runs/date-id/params.json`
+    1. scores_mean.npy : the mean scores across folds
+        `data/runs/date-id/predictor/subject/n_training_stories/shuffle/scores_mean.npy`
+    2. scores.npy : the score for each separate fold
+        `data/runs/date-id/predictor/subject/n_training_stories/shuffle/fold/scores.npy`
+    3. weights.npy : the model weights for each separate fold
+        `data/runs/date-id/predictor/subject/n_training_stories/shuffle/fold/weights.npy`
+    4. best_alphas.npy : the best alphas for each voxel in that fold
+        `data/runs/date-id/predictor/subject/n_training_stories/shuffle/fold/best_alphas.npy`
+
 
     Parameters
     ----------
-    strategy : {"loocv", "simple"}, default="loocv"
+    strategy : {"loocv", "simple"}, default="simple"
         `loocv` uses leave-one-out cross-validation for n_stories. The stories are determined by the
-        order of the `stories` parameter or its default value in `config.yaml`.
+         order of the `stories` parameter or its default value in `config.yaml`.
         `simple` computes the regression for a train/test split containing n_stories within each repeat.
         Stories are sampled randomly for each repeat.
-    predictor : {"all", "envelope", "embeddings"}
-        Run both predictors (default), or only encoding model with the envelope or
-        embeddings predictor.
+    predictor : {"all", "envelope", "embeddings"}, default="all"
+        Which predictor to run.
+        `all` will run separate encoding models for both predictors (default).
+        `envelope` will run the encoding model with the audio envelope as predictor.
+        `embeddings` will run the encoding model with the word embeddings of the stories as predictor.
     n_train_stories : int or list of int
-        Amount of training stories, can be one or multiple amounts.
-    subject : str or list of str
-        Subject identifier
-        Can be one or a list of : {"all", "UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}
-    n_delays : int
-        How many delays are used to model the HRF. The HRF is modeled by adding
-        a shifted set of duplicated features for each delay. `n_delays=5` implies
-        that the the features of the stimulus are shifted concatinated 5 times
-        to training/testing data.
-    interpolation : {"lanczos", "average"}
+        Number o of training stories for the encoding model. If a list is given, the encoding model will be
+         fitted with each number separately.
+    subject : str or list of str, default="UTS02"
+        Subject identifier.
+        Can be one or a list of : {`"all"`, `"UTS01"`, `"UTS02"`, `"UTS03"`, `"UTS04"`, `"UTS05"`, `"UTS06"`,
+         `"UTS07"`, `"UTS08"`}
+    n_delays : int, default=5
+        By how many TR's features are delayed to model the HRF. For `n_delays=5`, the features of the
+         predictor are shifted by one TR and concatinated to themselves for five times.
+    interpolation : {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
-        Only applies to the 'embeddings' predictor.
+        Only applies if `predictor=embeddings`.
     use_cache: bool, default=True
-        Whether the cache is used for `envelope` features.
+        Whether features are cached and reused.
+        Only applies if `predictor=envelope`.
     """
 
     # put arguments in right format
