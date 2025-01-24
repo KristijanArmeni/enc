@@ -13,28 +13,24 @@
 ## Setup
 
 ```sh
-# setup up conda environment and install git-annex
-conda create -n enc python=3.9 conda-forge::git-annex
+# setup up conda environment
+conda create -n enc python=3.9
 conda activate enc
 
 # install dependencies
 pip install -r requirements.txt
 
-# install pre-commit
-pre-commit install
-
-# run pre-commit against all files once
-pre-commit run --all-files
-
-# Copy the config
+# Copy and setup the config
 cp config.example.yaml config.yaml
+# If you want to generate plots, make sure to install inkscape
+# and set its path in INKSCAPE_DIR (see below)
 ```
 
-### Download data
+### Download the data
 
 ```sh
-# download empty dataset (ideally not within this repository)
-cd <separate-data-dir>
+# download empty dataset (you can specify a path outside of this
+# repository in the config under DATA_DIR.)
 datalad clone https://github.com/OpenNeuroDatasets/ds003020.git
 cd ds003020
 
@@ -78,6 +74,28 @@ cortex.options.usercfg
 
 5. Make sure inkscape is available in the terminal. [Instructions Mac](https://stackoverflow.com/a/22085247)
 
+## Development setup
+
+1. [Install poetry](https://python-poetry.org/docs/#installation)
+2. Install package:
+
+```sh
+# setup up conda environment
+conda create -n enc python=3.9
+conda activate enc
+
+# install dependencies
+poetry install
+
+# install pre-commit
+pre-commit install
+
+# run pre-commit against all files once
+pre-commit run --all-files
+
+# Copy the config
+cp config.example.yaml config.yaml
+```
 
 ## Team
 
