@@ -3,7 +3,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from sklearn.linear_model import RidgeCV
 
-from utils import get_logger, load_config
+from encoders.utils import get_logger, load_config
 
 log = get_logger(__name__)
 cfg = load_config()

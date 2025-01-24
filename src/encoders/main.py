@@ -8,10 +8,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold
 
-from data import load_fmri, load_wav
-from features import downsample, get_embeddings, get_envelope, trim
-from regression import pearsonr, ridge_regression
-from utils import get_logger, lanczosinterp2D, load_config, make_delayed
+from encoders.data import load_fmri, load_wav
+from encoders.features import downsample, get_embeddings, get_envelope, trim
+from encoders.regression import pearsonr, ridge_regression
+from encoders.utils import get_logger, lanczosinterp2D, load_config, make_delayed
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -56,7 +56,6 @@ def load_envelope_data(
 def load_sm1000_data(
     story: str, tr_len: float, y_data: np.ndarray, start_trim: float = 10.0
 ) -> np.ndarray:
-
     data, starts, stops = get_embeddings(story)
 
     # get 'mean word position'
@@ -108,7 +107,6 @@ def load_data_dict(
     n_delays: int,
     use_cache: bool,
 ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
-
     X_data_dict = dict()
     y_data_dict = dict()
     for story in stories:
