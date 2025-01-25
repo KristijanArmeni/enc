@@ -132,9 +132,9 @@ def load_data_dict(
             X_data = np.load(f"/Volumes/opt/enc/data/embeddings_huth/{story}.npy")
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
-        assert (
-            X_data.shape[0] == y_data.shape[0]
-        ), f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} do not match "
+        assert X_data.shape[0] == y_data.shape[0], (
+            f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} do not match "
+        )
 
         X_data_dict[story] = X_data
         y_data_dict[story] = y_data
@@ -192,7 +192,7 @@ def do_loocv_regression(
             test_stories=curr_test_stories,
             X_data_dict=X_data_dict,
             y_data_dict=y_data_dict,
-            score_fct=pearsonr,
+            score_fct=pearsonr,  # type: ignore
             alphas=alphas,
         )
         log.info(f"{fold} | Mean corr: {scores.mean()}")
@@ -338,7 +338,7 @@ def do_simple_regression(
             test_stories=curr_test_stories,
             X_data_dict=X_data_dict,
             y_data_dict=y_data_dict,
-            score_fct=pearsonr,
+            score_fct=pearsonr,  # type: ignore
         )
         log.info(f"{repeat} | Mean corr: {scores.mean()}")
         log.info(f"{repeat} | Max corr : {scores.max()}")
