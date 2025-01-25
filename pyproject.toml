@@ -24,6 +24,11 @@ setuptools = "^72.1.0"
 cython = "^0.29.37"
 pycortex = "^1.2.8"
 ipython = "^8.18.1"
+mkdocs = "^1.6.1"
+mkdocstrings = {extras = ["python"], version = "^0.27.0"}
+mkdocs-material = "^9.5.50"
+markdown = "^3.7"
+pymdown-extensions = "^10.14.1"
 
 [build-system]
 requires = ["poetry-core"]
