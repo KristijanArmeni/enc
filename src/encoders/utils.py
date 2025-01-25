@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+import time
 from pathlib import Path
 from random import choices
 from typing import List, Optional, Union
@@ -38,7 +39,6 @@ log = get_logger(__name__)
 
 
 def load_config():
-
     with open(ROOT / "config.yaml", "r") as f:
         config = yaml.safe_load(f)
 
@@ -198,3 +198,65 @@ def create_run_folder_name() -> str:
     date = datetime.today().strftime("%Y-%m-%d_%H-%M")
     rand_num = "".join(choices("0123456789", k=6))
     return f"{date}_{rand_num}"
+
+
+def counter(iterable, countevery=100, total=None, logger=logging.getLogger("counter")):
+    """Logs a status and timing update to [logger] every [countevery] draws from [iterable].
+    If [total] is given, log messages will include the estimated time remaining.
+    """
+    start_time = time.time()
+
+    ## Check if the iterable has a __len__ function, use it if no total length is supplied
+    if total is None:
+        if hasattr(iterable, "__len__"):
+            total = len(iterable)
+
+    for count, thing in enumerate(iterable):
+        yield thing
+
+        if not count % countevery:
+            current_time = time.time()
+            rate = float(count + 1) / (current_time - start_time)
+
+            if rate > 1:  ## more than 1 item/second
+                ratestr = "%0.2f items/second" % rate
+            else:  ## less than 1 item/second
+                ratestr = "%0.2f seconds/item" % (rate**-1)
+
+            if total is not None:
+                remitems = total - (count + 1)
+                remtime = remitems / rate
+                timestr = ", %s remaining" % time.strftime(
+                    "%H:%M:%S", time.gmtime(remtime)
+                )
+                itemstr = "%d/%d" % (count + 1, total)
+            else:
+                timestr = ""
+                itemstr = "%d" % (count + 1)
+
+            formatted_str = "%s items complete (%s%s)" % (itemstr, ratestr, timestr)
+            if logger is None:
+                print(formatted_str)
+            else:
+                logger.info(formatted_str)
+
+
+def mult_diag(d, mtx, left=True):
+    """Multiply a full matrix by a diagonal matrix.
+    This function should always be faster than dot.
+
+    Input:
+      d -- 1D (N,) array (contains the diagonal elements)
+      mtx -- 2D (N,N) array
+
+    Output:
+      mult_diag(d, mts, left=True) == dot(diag(d), mtx)
+      mult_diag(d, mts, left=False) == dot(mtx, diag(d))
+
+    By Pietro Berkes
+    From http://mail.scipy.org/pipermail/numpy-discussion/2007-March/026807.html
+    """
+    if left:
+        return (d * mtx.T).T
+    else:
+        return d * mtx
