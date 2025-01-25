@@ -133,7 +133,7 @@ def load_data_dict(
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
         assert X_data.shape[0] == y_data.shape[0], (
-            f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} do not match "
+            f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} don't match"
         )
 
         X_data_dict[story] = X_data
@@ -248,13 +248,16 @@ def do_simple_regression(
     stories: list[str], default=STORIES
         Pool of stories, the default is determined by the config.yaml
     n_train_stories: int, optional
-        The amount of training stories sampled from `stories`, if this is `None` will use all except one story.
+        The amount of training stories sampled from `stories`, if this is `None` will
+        use all except one story.
     test_story : str or `None`, default=`None`
         The story on which the regression models will be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        If `strategy="simple"`, determines how often regression is repeated on a different train/test set.
-    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}, default="UTS02"
+        If `strategy="simple"`, determines how often regression is repeated on a
+        different train/test set.
+    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
+        default="UTS02"
         Subject identifier
     tr_len: float, default=2.0
         Length of tr-windows used to sample fMRI data.
@@ -267,8 +270,10 @@ def do_simple_regression(
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies to the 'embeddings' predictor.
     ridge_implementation : {"ridgeCV", "ridge_huth"}, default="ridge_huth"
-        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV function from sklearn.
-        "ridge_huth" uses the implementation from the Huth lab codebase which applies SVD to the data matrix and computes correlation scores with bootstrapping.
+        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV
+        function from sklearn.
+        "ridge_huth" uses the implementation from the Huth lab codebase which applies
+        SVD to the data matrix and computes correlation scores with bootstrapping.
     alphas : np.ndarray or `None`, default = `None`
         Array of alpha values to optimize over. If `None`, will choose
         default value of the regression function.
@@ -402,9 +407,11 @@ def do_regression(
     Parameters
     ----------
     strategy : {"loocv", "simple"}, default="loocv"
-        `loocv` uses leave-one-out cross-validation for n_stories. The stories are determined by the
-        order of the `stories` parameter or its default value in `config.yaml`.
-        `simple` computes the regression for a train/test split containing n_stories within each repeat.
+        `loocv` uses leave-one-out cross-validation for n_stories. The stories are
+        determined by the order of the `stories` parameter or its default value in
+        `config.yaml`.
+        `simple` computes the regression for a train/test split containing n_stories
+        within each repeat.
         Stories are sampled randomly for each repeat.
     predictor : {"envelope", "embeddings", "embeddings_huth"}
         Which predictor to use for the regression. "envelope": audio envelope that
@@ -414,13 +421,17 @@ def do_regression(
     stories: list[str], default=STORIES
         Pool of stories, the default is determined by the config.yaml
     n_train_stories: int, optional
-        The amount of training stories sampled from `stories`, if this is `None` will use all except one story.
+        The amount of training stories sampled from `stories`, if this is `None` will
+        use all except one story.
     test_story : str or `None`, default=`None`
-        Only used if `strategy="simple"`. The story on which the regression models will be tested.
+        Only used if `strategy="simple"`. The story on which the regression models will
+        be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        Only used if `strategy="simple"`. Determines how often regression is repeated on a different train/test set.
-    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}, default="UTS02"
+        Only used if `strategy="simple"`. Determines how often regression is repeated
+        on a different train/test set.
+    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
+        default="UTS02"
         Subject identifier
     tr_len: float, default=2.0
         Length of tr-windows used to sample fMRI data.
@@ -433,8 +444,10 @@ def do_regression(
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies to the 'embeddings' predictor.
     ridge_implementation: {"ridgeCV", "ridge_huth"}, default="ridge_huth"
-        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV function from sklearn.
-        "ridge_huth" uses the implementation from the Huth lab codebase which applies SVD to the data matrix and computes correlation scores with bootstrapping.
+        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV
+        function from sklearn.
+        "ridge_huth" uses the implementation from the Huth lab codebase which applies
+        SVD to the data matrix and computes correlation scores with bootstrapping.
     use_cache: bool, default=True
         Whether the cache is used for `envelope` features.
     shuffle: bool, default=False

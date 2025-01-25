@@ -1,7 +1,7 @@
 import logging
 import os
-from datetime import datetime
 import time
+from datetime import datetime
 from pathlib import Path
 from random import choices
 from typing import List, Optional, Union
@@ -55,7 +55,8 @@ def make_delayed(signal: np.ndarray, delays: np.ndarray, circpad=False) -> np.nd
         2-D array of shape (n_samples, n_features)
     delays : np.ndarray
         1-D array of delays to apply to the signal
-        can be positive or negative; negative values advance the signal (shifting it backward)
+        can be positive or negative; negative values advance the signal (shifting it
+        backward)
     circpad : bool
         If True, use circular padding for delays
         If False, use zero padding for delays
@@ -115,7 +116,8 @@ def lanczosfun(f_c, t, a=3):
     t : np.ndarray or float
         Time
     a : int
-        Number of lobes (window size), typically 2 or 3; only signals within the window will have non-zero weights.
+        Number of lobes (window size), typically 2 or 3; only signals within the window
+        will have non-zero weights.
 
     Returns
     --------
@@ -131,7 +133,10 @@ def lanczosfun(f_c, t, a=3):
 
 def lanczosinterp2D(signal, oldtime, newtime, window=3, cutoff_mult=1.0):
     """
-    Lanczos interpolation for 2D signals; interpolates [signal] from [oldtime] to [newtime], assuming that the rows of [signal] correspond to [oldtime]. Returns a new signal with rows corresponding to [newtime] and the same number of columns as [signal].
+    Lanczos interpolation for 2D signals; interpolates [signal] from [oldtime] to
+    [newtime], assuming that the rows of [signal] correspond to [oldtime]. Returns a
+    new signal with rows corresponding to [newtime] and the same number of columns as
+    [signal].
 
     Parameters
     -----------
@@ -201,12 +206,14 @@ def create_run_folder_name() -> str:
 
 
 def counter(iterable, countevery=100, total=None, logger=logging.getLogger("counter")):
-    """Logs a status and timing update to [logger] every [countevery] draws from [iterable].
-    If [total] is given, log messages will include the estimated time remaining.
+    """Logs a status and timing update to [logger] every [countevery] draws from
+    [iterable]. If [total] is given, log messages will include the estimated time
+    remaining.
     """
     start_time = time.time()
 
-    ## Check if the iterable has a __len__ function, use it if no total length is supplied
+    ## Check if the iterable has a __len__ function, use it
+    ##  if no total length is supplied
     if total is None:
         if hasattr(iterable, "__len__"):
             total = len(iterable)

@@ -33,3 +33,10 @@ pymdown-extensions = "^10.14.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+extend-select = ["I", "E501"]
+ignore = ["F401"]

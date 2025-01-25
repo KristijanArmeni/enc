@@ -131,7 +131,10 @@ if __name__ == "__main__":
         nargs="+",
         choices=["all", "few"],
         default=["few"],
-        help="Amount of stories to download, will download all by default, or 3 if 'few' is selected.",
+        help=(
+            "Amount of stories to download, will download all by default, or 3 if"
+            "'few' is selected."
+        ),
     )
     parser.add_argument(
         "--subject",
