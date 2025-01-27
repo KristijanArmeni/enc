@@ -8,9 +8,21 @@ import numpy as np
 from cortex import svgoverlay
 from scipy.stats import bootstrap, trim_mean
 
-from encoders.utils import ROOT, check_make_dirs, load_config
+from encoders.utils import ROOT, check_make_dirs, get_logger, load_config
 
-os.environ["PATH"] = load_config()["INKSCAPE_PATH"] + ":" + os.environ["PATH"]
+log = get_logger(__name__)
+
+INKSCAPE_PATH = load_config().get("INKSCAPE_PATH")
+if not Path(INKSCAPE_PATH).is_file():
+    log.critical(
+        "INKSCAPE_PATH not valid. Install inkscape, and place path to"
+        " excecutale into the config as INKSCAPE_PATH."
+    )
+    import sys
+
+    sys.exit(-1)
+
+os.environ["PATH"] = INKSCAPE_PATH + ":" + os.environ["PATH"]
 svgoverlay.INKSCAPE_VERSION = str(load_config()["INKSCAPE_VERSION"])
 
 
@@ -96,7 +108,7 @@ def plot_aggregate_results(
     plt.legend(loc="upper left")
 
     if title is not None:
-        ax.title(title)
+        ax.title(title)  # type: ignore
     if show_plot:
         plt.show()
 
@@ -119,7 +131,6 @@ def trim_mean_wrapper(x):
 
 
 def get_ci(x):
-
     ci = bootstrap(
         data=(x,), statistic=trim_mean_wrapper, n_resamples=500, confidence_level=0.95
     ).confidence_interval
@@ -132,7 +143,6 @@ def get_yerr(mean, ci):
 
 
 def plot_means(data_tuple):
-
     data1 = data_tuple[0]
     data2 = data_tuple[1]
 
@@ -161,7 +171,6 @@ n_stories = [1, 5, 12]
 
 # load the data
 def load_data_wrapper(ds: str, which: str):
-
     datadir = Path(ds, which, "UTS02")
     rho_orig, rho_shuf = {}, {}
     for n in n_stories:
@@ -176,7 +185,6 @@ def load_data_wrapper(ds: str, which: str):
 
 
 def make_brain_plots(scores_dict):
-
     fig, ax = plt.subplots(1, 3, figsize=(12, 4), layout="constrained")
 
     titles = {
@@ -185,7 +193,6 @@ def make_brain_plots(scores_dict):
         "12": "12 Training stories",
     }
     for i, n in enumerate(n_stories):
-
         plot_voxel_performance(
             scores=scores_dict[str(n)], subject="UTS02", vmin=0, vmax=0.5, ax=ax[i]
         )
@@ -199,7 +206,6 @@ def make_brain_plots(scores_dict):
 
 
 def make_figure(run_dir, which):
-
     rho_orig, _ = load_data_wrapper(ds=run_dir, which=which)
 
     fig = make_brain_plots(scores_dict=rho_orig)
@@ -208,7 +214,6 @@ def make_figure(run_dir, which):
 
 
 if __name__ == "__main__":
-
     cfg = load_config()
     RUNS_DIR = cfg["RUNS_DIR"]
     ds = RUNS_DIR + "/2024-11-06_15-34_361506"

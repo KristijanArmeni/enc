@@ -7,8 +7,13 @@ from typing import Union
 
 import numpy as np
 
-from main import do_regression
-from utils import check_make_dirs, create_run_folder_name, get_logger, load_config
+from encoders.main import do_regression
+from encoders.utils import (
+    check_make_dirs,
+    create_run_folder_name,
+    get_logger,
+    load_config,
+)
 
 log = get_logger(__name__)
 

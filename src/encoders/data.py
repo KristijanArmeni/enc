@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import wavfile
 
-from utils import get_logger, load_config
+from encoders.utils import get_logger, load_config
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -33,15 +33,12 @@ def load_wav(story: str) -> Tuple[int, np.ndarray]:
     wav_path = Path(DATADIR, WAV_DIR, f"{story}.wav")
     sample_rate, wav = wavfile.read(wav_path)
     log.info(
-        f"{story}.wav"
-        f" | channels: {wav.shape[1]}"
-        f" | length {wav.shape[0] / sample_rate}s"
+        f"{story}.wav | channels: {wav.shape[1]} | length {wav.shape[0] / sample_rate}s"
     )
     return sample_rate, wav
 
 
 def get_tier_data(text_grid_lines: list) -> dict:
-
     lines = [line.strip("\n").strip() for line in text_grid_lines]
 
     # find what textgrid format it is
@@ -162,7 +159,6 @@ def get_tier_data(text_grid_lines: list) -> dict:
         word_dict = {"start": words_start, "stop": words_stop, "text": words}
 
     elif text_grid_ftype == TEXT_GRID_FORMATS[1]:
-
         """Example header:
         "Praat chronological TextGrid text file"
         0.0124716553288 819.988889088   ! Time domain.
@@ -198,7 +194,6 @@ def get_tier_data(text_grid_lines: list) -> dict:
         phone_dict = {"start": [], "stop": [], "text": []}
         word_dict = {"start": [], "stop": [], "text": []}
         for t, w in zip(times, words):
-
             tier, start, stop = t.split()
 
             if tier == "1":
@@ -214,7 +209,6 @@ def get_tier_data(text_grid_lines: list) -> dict:
 
 
 def load_textgrid(story: str) -> dict[str, pd.DataFrame]:
-
     textgrid_dir = DATADIR / "derivative" / "TextGrids"
     fn = textgrid_dir / f"{story}.TextGrid"
 
