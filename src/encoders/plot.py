@@ -6,7 +6,7 @@ import cortex
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
-from scipy.stats import bootstrap, trim_mean
+from scipy.stats import bootstrap, sem, trim_mean
 
 from encoders.utils import ROOT, check_make_dirs, get_logger, load_config
 
@@ -232,8 +232,32 @@ if __name__ == "__main__":
     fig2.savefig(fn2)
     fig2.savefig(fn2.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
 
-    # fig3 = make_brain_plots(scores_dict=rho_shuf)
-    # fig3.suptitle("Embedding encoding model performance with increasing training data (shuffled)", fontsize=16)
+    out = load_data_wrapper(ds=ds, which="embeddings")
 
-    # fig4 = make_brain_plots(scores_dict=rho_shuf_audio)
-    # fig4.suptitle("Envelope encoding model performance with increasing training data (shuffled)", fontsize=16)
+    orig = out[0]
+    shuf = out[1]
+    y = np.zeros(len(orig))
+
+    y_orig = np.array([np.mean(data) for data in orig.values()])
+    y_orig_sem = np.array([sem(data) for data in orig.values()])
+    y_shuf = np.array([np.mean(data) for data in shuf.values()])
+
+    fig, ax = plt.subplots()
+
+    x = ["1", "5", "12"]
+
+    ax.plot(x, y_orig, "-o")
+
+    # plot sem
+    ax.fill_between(x, y1=y_orig + y_orig_sem, y2=y_orig - y_orig_sem, alpha=0.3)
+
+    # ax.plot(["1", "5", "12"], y_shuf)
+
+    ax.set_xlabel("N Stories")
+    ax.set_ylabel("Regression performance")
+
+    ax.grid(visible=True, lw=0.5, alpha=0.3)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.show()
