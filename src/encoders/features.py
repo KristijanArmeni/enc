@@ -4,8 +4,8 @@ import h5py
 import numpy as np
 from scipy.signal import hilbert, resample
 
-from data import EMBEDDINGS_FILE, load_textgrid
-from utils import get_logger
+from encoders.data import EMBEDDINGS_FILE, load_textgrid
+from encoders.utils import get_logger
 
 log = get_logger(__name__)
 
@@ -48,7 +48,6 @@ def load_embeddings() -> Tuple[np.ndarray, Dict]:
     Load the embedding vectors and vocabulary from the EMBEDDINGS_FILE (h5py).
     """
     with h5py.File(EMBEDDINGS_FILE, "r") as f:
-
         # List all groups
         log.info(f"Loading: {EMBEDDINGS_FILE}")
 
@@ -85,7 +84,7 @@ def get_embeddings(story: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     exist_tokens = [t for t in tokens if t in vocab]
 
     log.info(
-        f"{len(exist_tokens)}/{len(tokens)} (missing {len(tokens)-len(exist_tokens)}) story tokens found in vocab."
+        f"{len(exist_tokens)}/{len(tokens)} (missing {len(tokens) - len(exist_tokens)}) story tokens found in vocab."
     )
 
     embs = np.array(

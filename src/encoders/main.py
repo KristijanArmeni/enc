@@ -8,10 +8,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold
 
-from data import load_fmri, load_wav
-from features import downsample, get_embeddings, get_envelope, trim
-from regression import pearsonr, ridge_regression
-from utils import get_logger, lanczosinterp2D, load_config, make_delayed
+from encoders.data import load_fmri, load_wav
+from encoders.features import downsample, get_embeddings, get_envelope, trim
+from encoders.regression import pearsonr, ridge_regression, ridge_regression_huth
+from encoders.utils import get_logger, lanczosinterp2D, load_config, make_delayed
 
 log = get_logger(__name__)
 cfg = load_config()
@@ -56,7 +56,6 @@ def load_envelope_data(
 def load_sm1000_data(
     story: str, tr_len: float, y_data: np.ndarray, start_trim: float = 10.0
 ) -> np.ndarray:
-
     data, starts, stops = get_embeddings(story)
 
     # get 'mean word position'
@@ -108,7 +107,6 @@ def load_data_dict(
     n_delays: int,
     use_cache: bool,
 ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
-
     X_data_dict = dict()
     y_data_dict = dict()
     for story in stories:
@@ -134,9 +132,9 @@ def load_data_dict(
             X_data = np.load(f"/Volumes/opt/enc/data/embeddings_huth/{story}.npy")
             X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
 
-        assert (
-            X_data.shape[0] == y_data.shape[0]
-        ), f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} do not match "
+        assert X_data.shape[0] == y_data.shape[0], (
+            f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} don't match"
+        )
 
         X_data_dict[story] = X_data
         y_data_dict[story] = y_data
@@ -152,6 +150,7 @@ def do_loocv_regression(
     tr_len: float = 2.0,
     n_delays: int = 4,
     interpolation: str = "lanczos",
+    ridge_implementation: str = "ridge_huth",
     alphas: Optional[np.ndarray] = None,
     use_cache: bool = True,
     shuffle: bool = False,
@@ -189,14 +188,24 @@ def do_loocv_regression(
         curr_test_stories = [stories[idx] for idx in test_indices]
 
         log.info(f"{fold} | Running Regression")
-        scores, weights, best_alphas = ridge_regression(
-            train_stories=curr_train_stories,
-            test_stories=curr_test_stories,
-            X_data_dict=X_data_dict,
-            y_data_dict=y_data_dict,
-            score_fct=pearsonr,
-            alphas=alphas,
-        )
+        if ridge_implementation == "ridge_huth":
+            scores, weights, best_alphas = ridge_regression_huth(
+                train_stories=curr_train_stories,
+                test_stories=curr_test_stories,
+                X_data_dict=X_data_dict,
+                y_data_dict=y_data_dict,
+                score_fct=pearsonr,  # type: ignore
+                alphas=alphas,
+            )
+        else:
+            scores, weights, best_alphas = ridge_regression(
+                train_stories=curr_train_stories,
+                test_stories=curr_test_stories,
+                X_data_dict=X_data_dict,
+                y_data_dict=y_data_dict,
+                score_fct=pearsonr,  # type: ignore
+                alphas=alphas,
+            )
         log.info(f"{fold} | Mean corr: {scores.mean()}")
         log.info(f"{fold} | Max corr : {scores.max()}")
 
@@ -220,6 +229,7 @@ def do_simple_regression(
     tr_len: float = 2.0,
     n_delays: int = 4,
     interpolation: str = "lanczos",
+    ridge_implementation: str = "ridge_huth",
     use_cache: bool = True,
     shuffle: bool = False,
     seed: Optional[int] = 123,
@@ -238,13 +248,16 @@ def do_simple_regression(
     stories: list[str], default=STORIES
         Pool of stories, the default is determined by the config.yaml
     n_train_stories: int, optional
-        The amount of training stories sampled from `stories`, if this is `None` will use all except one story.
+        The amount of training stories sampled from `stories`, if this is `None` will
+        use all except one story.
     test_story : str or `None`, default=`None`
         The story on which the regression models will be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        If `strategy="simple"`, determines how often regression is repeated on a different train/test set.
-    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}, default="UTS02"
+        If `strategy="simple"`, determines how often regression is repeated on a
+        different train/test set.
+    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
+        default="UTS02"
         Subject identifier
     tr_len: float, default=2.0
         Length of tr-windows used to sample fMRI data.
@@ -256,6 +269,11 @@ def do_simple_regression(
     interpolation : {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies to the 'embeddings' predictor.
+    ridge_implementation : {"ridgeCV", "ridge_huth"}, default="ridge_huth"
+        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV
+        function from sklearn.
+        "ridge_huth" uses the implementation from the Huth lab codebase which applies
+        SVD to the data matrix and computes correlation scores with bootstrapping.
     alphas : np.ndarray or `None`, default = `None`
         Array of alpha values to optimize over. If `None`, will choose
         default value of the regression function.
@@ -335,13 +353,22 @@ def do_simple_regression(
 
         # 3. run regression
         log.info(f"{repeat} | Running Regression")
-        scores, weights, best_alphas = ridge_regression(
-            train_stories=curr_train_stories,
-            test_stories=curr_test_stories,
-            X_data_dict=X_data_dict,
-            y_data_dict=y_data_dict,
-            score_fct=pearsonr,
-        )
+        if ridge_implementation == "ridge_huth":
+            scores, weights, best_alphas = ridge_regression_huth(
+                train_stories=curr_train_stories,
+                test_stories=curr_test_stories,
+                X_data_dict=X_data_dict,
+                y_data_dict=y_data_dict,
+                score_fct=pearsonr,  # type: ignore
+            )
+        else:
+            scores, weights, best_alphas = ridge_regression(
+                train_stories=curr_train_stories,
+                test_stories=curr_test_stories,
+                X_data_dict=X_data_dict,
+                y_data_dict=y_data_dict,
+                score_fct=pearsonr,  # type: ignore
+            )
         log.info(f"{repeat} | Mean corr: {scores.mean()}")
         log.info(f"{repeat} | Max corr : {scores.max()}")
 
@@ -367,6 +394,7 @@ def do_regression(
     tr_len: float = 2.0,
     n_delays: int = 4,
     interpolation: str = "lanczos",
+    ridge_implementation: str = "ridge_huth",
     use_cache: bool = True,
     shuffle: bool = False,
     seed: Optional[int] = 123,
@@ -379,9 +407,11 @@ def do_regression(
     Parameters
     ----------
     strategy : {"loocv", "simple"}, default="loocv"
-        `loocv` uses leave-one-out cross-validation for n_stories. The stories are determined by the
-        order of the `stories` parameter or its default value in `config.yaml`.
-        `simple` computes the regression for a train/test split containing n_stories within each repeat.
+        `loocv` uses leave-one-out cross-validation for n_stories. The stories are
+        determined by the order of the `stories` parameter or its default value in
+        `config.yaml`.
+        `simple` computes the regression for a train/test split containing n_stories
+        within each repeat.
         Stories are sampled randomly for each repeat.
     predictor : {"envelope", "embeddings", "embeddings_huth"}
         Which predictor to use for the regression. "envelope": audio envelope that
@@ -391,13 +421,17 @@ def do_regression(
     stories: list[str], default=STORIES
         Pool of stories, the default is determined by the config.yaml
     n_train_stories: int, optional
-        The amount of training stories sampled from `stories`, if this is `None` will use all except one story.
+        The amount of training stories sampled from `stories`, if this is `None` will
+        use all except one story.
     test_story : str or `None`, default=`None`
-        Only used if `strategy="simple"`. The story on which the regression models will be tested.
+        Only used if `strategy="simple"`. The story on which the regression models will
+        be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        Only used if `strategy="simple"`. Determines how often regression is repeated on a different train/test set.
-    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"}, default="UTS02"
+        Only used if `strategy="simple"`. Determines how often regression is repeated
+        on a different train/test set.
+    subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
+        default="UTS02"
         Subject identifier
     tr_len: float, default=2.0
         Length of tr-windows used to sample fMRI data.
@@ -409,6 +443,11 @@ def do_regression(
     interpolation: {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies to the 'embeddings' predictor.
+    ridge_implementation: {"ridgeCV", "ridge_huth"}, default="ridge_huth"
+        Which implementation of ridge regression to use. "ridgeCV" uses the RidgeCV
+        function from sklearn.
+        "ridge_huth" uses the implementation from the Huth lab codebase which applies
+        SVD to the data matrix and computes correlation scores with bootstrapping.
     use_cache: bool, default=True
         Whether the cache is used for `envelope` features.
     shuffle: bool, default=False
@@ -443,6 +482,7 @@ def do_regression(
             tr_len=tr_len,
             n_delays=n_delays,
             interpolation=interpolation,
+            ridge_implementation=ridge_implementation,
             use_cache=use_cache,
             shuffle=shuffle,
         )
@@ -456,6 +496,7 @@ def do_regression(
             tr_len=tr_len,
             n_delays=n_delays,
             interpolation=interpolation,
+            ridge_implementation=ridge_implementation,
             use_cache=use_cache,
             shuffle=shuffle,
             n_repeats=n_repeats,
@@ -537,6 +578,12 @@ if __name__ == "__main__":
         help="Interpolation method for embeddings.",
     )
     parser.add_argument(
+        "--ridge_implementation",
+        default="ridge_huth",
+        choices=["ridgeCV", "ridge_huth"],
+        help="Which implementation of ridge regression to use.",
+    )
+    parser.add_argument(
         "--n_delays",
         default=4,
         type=int,
@@ -548,7 +595,10 @@ if __name__ == "__main__":
         strategy=args.strategy,
         predictor=args.predictor,
         n_train_stories=args.n_train_stories,
+        n_repeats=args.n_repeats,
         subject=args.subject,
+        interpolation=args.interpolation_method,
+        ridge_implementation=args.ridge_implementation,
         use_cache=not args.not_use_cache,
         n_delays=args.n_delays,
     )

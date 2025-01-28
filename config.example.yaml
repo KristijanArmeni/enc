@@ -1,3 +1,5 @@
 CACHE_DIR: .cache
-DATA_DIR: /path/to/data
+DATA_DIR: ds003020
+RUNS_DIR: runs
+INKSCAPE_DIR: /path/to/inkscape
 STORIES: [souls, alternateithicatom, avatar, legacy, odetostepfather]

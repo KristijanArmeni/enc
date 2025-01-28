@@ -13,51 +13,29 @@
 ## Setup
 
 ```sh
-# setup up conda environment and install git-annex
-conda create -n enc python=3.9 conda-forge::git-annex
+# setup up conda environment
+conda create -n enc python=3.9
 conda activate enc
 
-# install dependencies
-pip install -r requirements.txt
+# install package
+pip install .
 
-# install pre-commit
-pre-commit install
+# install git-annex
+https://handbook.datalad.org/en/latest/intro/installation.html
 
-# run pre-commit against all files once
-pre-commit run --all-files
+# download the data (one of the below)
+python src/encoders/download_data.py # subject 2 & few stories
+python src/encoders/download_data.py --stories all # subject 2 & all stories
+python src/encoders/download_data.py --stories all --subjects all # all subjects & all stories
 
-# Copy the config
-cp config.example.yaml config.yaml
-```
+# you can also install the path into a custom dir
+python src/encoders/download_data.py --data_dir /path/to/custom/dir
 
-### Download data
 
-```sh
-# download empty dataset (ideally not within this repository)
-cd <separate-data-dir>
-datalad clone https://github.com/OpenNeuroDatasets/ds003020.git
-cd ds003020
-
-# Edit config.yaml such that your data path points to the ds003020 repository
-
-# Stories: https://www.nature.com/articles/s41597-023-02437-z/tables/1
-datalad get derivative/preprocessed_data/UTS02/alternateithicatom.hf5
-datalad get derivative/preprocessed_data/UTS02/souls.hf5
-datalad get derivative/preprocessed_data/UTS02/avatar.hf5
-datalad get derivative/preprocessed_data/UTS02/legacy.hf5
-datalad get derivative/preprocessed_data/UTS02/odetostepfather.hf5
-datalad get derivative/TextGrids/alternateithicatom.TextGrid
-datalad get derivative/TextGrids/souls.TextGrid
-datalad get derivative/TextGrids/avatar.TextGrid
-datalad get derivative/TextGrids/legacy.TextGrid
-datalad get derivative/TextGrids/odetostepfather.TextGrid
-datalad get stimuli/alternateithicatom.wav
-datalad get stimuli/souls.wav
-datalad get stimuli/avatar.wav
-datalad get stimuli/legacy.wav
-datalad get stimuli/odetostepfather.wav
-datalad get derivative/pycortex-db/UTS02/
-datalad get derivative/english1000sm.hf5
+# Setup the config with the editor of your choice
+nano config.yaml
+# If you want to generate plots, make sure to install inkscape
+# and set its path in INKSCAPE_DIR (see below)
 ```
 
 ### Setup pycortex (for visualization)
@@ -78,6 +56,31 @@ cortex.options.usercfg
 
 5. Make sure inkscape is available in the terminal. [Instructions Mac](https://stackoverflow.com/a/22085247)
 
+## Development setup
+
+1. [Install poetry](https://python-poetry.org/docs/#installation)
+2. Run following commands:
+
+```sh
+# setup up conda environment (optional)
+conda create -n enc python=3.9
+conda activate enc
+
+# install dependencies
+poetry install
+
+# install pre-commit
+pre-commit install
+
+# run pre-commit against all files once
+pre-commit run --all-files
+
+# download the data (one of the below)
+python src/encoders/download_data.py # subject 2 & few stories
+
+# Setup the config with the editor of your choice
+nano config.yaml
+```
 
 ## Team
 
