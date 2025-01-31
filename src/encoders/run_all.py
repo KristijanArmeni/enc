@@ -29,6 +29,7 @@ def run_all(
     n_delays: int = 5,
     interpolation: str = "lanczos",
     use_cache: bool = True,
+    keep_train_stories_in_mem: bool = True,
 ):
     """Runs encoding models n_repeat times and saves results data/runs to disk.
 
@@ -48,31 +49,39 @@ def run_all(
     Parameters
     ----------
     strategy : {"loocv", "simple"}, default="simple"
-        `loocv` uses leave-one-out cross-validation for n_stories. The stories are determined by the
-         order of the `stories` parameter or its default value in `config.yaml`.
-        `simple` computes the regression for a train/test split containing n_stories within each repeat.
+        `loocv` uses leave-one-out cross-validation for n_stories. The stories are
+         determined by the order of the `stories` parameter or its default value in
+         `config.yaml`.
+        `simple` computes the regression for a train/test split containing n_stories
+         within each repeat.
         Stories are sampled randomly for each repeat.
     predictor : {"all", "envelope", "embeddings"}, default="all"
         Which predictor to run.
         `all` will run separate encoding models for both predictors (default).
         `envelope` will run the encoding model with the audio envelope as predictor.
-        `embeddings` will run the encoding model with the word embeddings of the stories as predictor.
+        `embeddings` will run the encoding model with the word embeddings of the stories
+         as predictor.
     n_train_stories : int or list of int
-        Number o of training stories for the encoding model. If a list is given, the encoding model will be
-         fitted with each number separately.
+        Number o of training stories for the encoding model. If a list is given, the
+         encoding model will be fitted with each number separately.
     subject : str or list of str, default="UTS02"
         Subject identifier.
-        Can be one or a list of : {`"all"`, `"UTS01"`, `"UTS02"`, `"UTS03"`, `"UTS04"`, `"UTS05"`, `"UTS06"`,
-         `"UTS07"`, `"UTS08"`}
+        Can be one or a list of : {`"all"`, `"UTS01"`, `"UTS02"`, `"UTS03"`, `"UTS04"`,
+         `"UTS05"`, `"UTS06"`, `"UTS07"`, `"UTS08"`}
     n_delays : int, default=5
-        By how many TR's features are delayed to model the HRF. For `n_delays=5`, the features of the
-         predictor are shifted by one TR and concatinated to themselves for five times.
+        By how many TR's features are delayed to model the HRF. For `n_delays=5`, the
+         features of the predictor are shifted by one TR and concatinated to themselves
+         for five times.
     interpolation : {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies if `predictor=embeddings`.
     use_cache: bool, default=True
         Whether features are cached and reused.
         Only applies if `predictor=envelope`.
+    keep_train_stories_in_mem: bool, default=True
+        Whether stories are kept in memory after first loading. Unless when using all
+        stories turning this off will reduce the memory footprint, but increase the
+        time is spent loading data. Only works if `strategy='simple'`.
     """
 
     # put arguments in right format
@@ -111,13 +120,17 @@ def run_all(
 
     # log all parameters
     config = {
-        "subject_arg": subject,  # command line arguments
-        "subjects": subjects,  # resolved predictors
+        "strategy": strategy,
         "predictor_arg": predictor,
         "predictors": predictors,
         "n_train_stories": n_train_stories,
-        "interpolation": interpolation,
+        "n_repeats": n_repeats,
+        "subject_arg": subject,  # command line arguments
+        "subjects": subjects,  # resolved predictors
         "n_delays": n_delays,
+        "interpolation": interpolation,
+        "use_cache": use_cache,
+        "keep_train_stories_in_mem": keep_train_stories_in_mem,
     }
     # update results file
     params_path = os.path.join(base_dir, "params.json")
@@ -126,9 +139,9 @@ def run_all(
     log.info(f"Written parameters to {params_path}")
 
     # aggregate overall max correlations and continously update in json
-    results_max_agg = defaultdict(
-        partial(defaultdict, partial(defaultdict, dict))
-    )  # enables instantiating hierarchy of dicts without manually creating them at each level.
+    results_max_agg = defaultdict(partial(defaultdict, partial(defaultdict, dict)))
+    # enables instantiating hierarchy of dicts without manually creating them at each
+    # level.
     results_max_path = os.path.join(base_dir, "results_max.json")
     for current_predictor in predictors:
         for current_subject in subjects:
@@ -154,6 +167,7 @@ def run_all(
                         use_cache=use_cache,
                         shuffle=shuffle,
                         show_results=False,
+                        keep_train_stories_in_mem=keep_train_stories_in_mem,
                     )
                     np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
                     for idx_fold, (scores_fold, weights_fold, best_alpha) in enumerate(
@@ -203,7 +217,10 @@ if __name__ == "__main__":
         type=str,
         default=["all"],
         choices=["all", "embeddings", "envelope"],
-        help="Predictor for the encoding model. Can be 'all' or a combination of predictors.",
+        help=(
+            "Predictor for the encoding model. Can be 'all' or a combination of"
+            " predictors."
+        ),
     )
     parser.add_argument(
         "--n_train_stories",
@@ -260,6 +277,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether the cache is used for `envelope` features.",
     )
+    parser.add_argument(
+        "--no_keep_train_stories_in_mem",
+        action="store_true",
+        help="Whether stories are kept in memory after first loading.",
+    )
     args = parser.parse_args()
     run_all(
         strategy=args.strategy,
@@ -270,4 +292,5 @@ if __name__ == "__main__":
         n_delays=args.n_delays,
         interpolation=args.interpolation,
         use_cache=not args.no_cache,
+        keep_train_stories_in_mem=not args.no_keep_train_stories_in_mem,
     )

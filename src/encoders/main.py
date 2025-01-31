@@ -233,6 +233,7 @@ def do_simple_regression(
     use_cache: bool = True,
     shuffle: bool = False,
     seed: Optional[int] = 123,
+    keep_train_stories_in_mem: bool = True,
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
 ]:
@@ -283,6 +284,10 @@ def do_simple_regression(
         Whether to shuffle the predictors (features).
     seed: int | None, default=123
         Seed determining sampling of stories.
+    keep_train_stories_in_mem: bool, default=True
+        Whether stories are kept in memory after first loading. Unless when using all
+        stories turning this off will reduce the memory footprint, but increase the
+        time is spent loading data.
 
     Returns
     -------
@@ -372,6 +377,10 @@ def do_simple_regression(
         log.info(f"{repeat} | Mean corr: {scores.mean()}")
         log.info(f"{repeat} | Max corr : {scores.max()}")
 
+        if not keep_train_stories_in_mem:
+            X_data_dict = dict()
+            y_data_dict = dict()
+
         # 4. append results
         scores_list.append(scores)
         weights_list.append(weights)
@@ -399,6 +408,7 @@ def do_regression(
     shuffle: bool = False,
     seed: Optional[int] = 123,
     show_results: bool = True,
+    keep_train_stories_in_mem: bool = True,
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
 ]:
@@ -456,6 +466,10 @@ def do_regression(
         Seed determining sampling of stories
     show_results: bool, default=True
         Create a plot showing the results in pycortex.
+    keep_train_stories_in_mem: bool, default=True
+        Whether stories are kept in memory after first loading. Unless when using all
+        stories turning this off will reduce the memory footprint, but increase the
+        time is spent loading data. Only works if `strategy='simple'`.
 
 
     Returns
@@ -501,6 +515,7 @@ def do_regression(
             shuffle=shuffle,
             n_repeats=n_repeats,
             seed=seed,
+            keep_train_stories_in_mem=keep_train_stories_in_mem,
         )
     else:
         raise ValueError(f"Invalid regression strategy: {strategy}")
