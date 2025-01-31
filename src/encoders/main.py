@@ -378,6 +378,8 @@ def do_simple_regression(
         log.info(f"{repeat} | Max corr : {scores.max()}")
 
         if not keep_train_stories_in_mem:
+            del X_data_dict
+            del y_data_dict
             X_data_dict = dict()
             y_data_dict = dict()
 
