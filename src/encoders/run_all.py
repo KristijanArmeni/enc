@@ -28,6 +28,7 @@ def run_all(
     subject: Union[str, list[str]] = "UTS02",
     n_delays: int = 5,
     interpolation: str = "lanczos",
+    do_shuffle: bool = False,
     use_cache: bool = True,
     keep_train_stories_in_mem: bool = True,
 ):
@@ -113,6 +114,11 @@ def run_all(
     if "all" in predictors:
         predictors = ["envelope", "embeddings"]
 
+    # toggle the shuffle swithch
+    shuffle_opts = [False]
+    if do_shuffle:
+        shuffle_opts = [False, True]
+
     # handle data folder
     folder_name = create_run_folder_name()
     base_dir = os.path.join(RUNS_DIR, folder_name)
@@ -129,9 +135,13 @@ def run_all(
         "subjects": subjects,  # resolved predictors
         "n_delays": n_delays,
         "interpolation": interpolation,
+        "do_shuffle": shuffle_opts,
         "use_cache": use_cache,
         "keep_train_stories_in_mem": keep_train_stories_in_mem,
     }
+
+    log.info(f"Running experiment with the following parameters:\n{json.dumps(config)}")
+
     # update results file
     params_path = os.path.join(base_dir, "params.json")
     with open(params_path, "w") as f_out:
@@ -145,7 +155,7 @@ def run_all(
     results_max_path = os.path.join(base_dir, "results_max.json")
     for current_predictor in predictors:
         for current_subject in subjects:
-            for shuffle in [False, True]:
+            for shuffle in shuffle_opts:
                 shuffle_str = "shuffled" if shuffle else "not_shuffled"
                 for current_n_train_stories in n_train_stories_list:
                     output_dir = os.path.join(
@@ -273,6 +283,11 @@ if __name__ == "__main__":
         help="Interpolation method used for embeddings predictor.",
     )
     parser.add_argument(
+        "--do_shuffle",
+        action="store_true",
+        help="Whether or not to fit models with randomly shuffled predictors",
+    )
+    parser.add_argument(
         "--no_cache",
         action="store_true",
         help="Whether the cache is used for `envelope` features.",
@@ -291,6 +306,7 @@ if __name__ == "__main__":
         subject=args.subject,
         n_delays=args.n_delays,
         interpolation=args.interpolation,
+        do_shuffle=args.do_shuffle,
         use_cache=not args.no_cache,
         keep_train_stories_in_mem=not args.no_keep_train_stories_in_mem,
     )
