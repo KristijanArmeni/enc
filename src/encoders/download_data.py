@@ -50,7 +50,7 @@ def download_data(
         clone(source=DATASET_URL, path=data_dir)
 
     # 2. Download relevant data
-    if stories == "all":
+    if "all" in stories:
         log.info("Downloading all data, this can take a while.")
         get(
             dataset=data_dir,
