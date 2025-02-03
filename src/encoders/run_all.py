@@ -76,6 +76,10 @@ def run_all(
     interpolation : {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies if `predictor=embeddings`.
+    do_shuffle: book, default=False
+        Whether or not to run model fits with predictors shuffled (as a control).
+        A separate subfolder ('shuffled') will be created in the run folder with
+        these results.
     use_cache: bool, default=True
         Whether features are cached and reused.
         Only applies if `predictor=envelope`.
