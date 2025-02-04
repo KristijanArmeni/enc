@@ -3,6 +3,7 @@ import json
 import os
 from collections import defaultdict
 from functools import partial
+from itertools import product
 from typing import Union
 
 import numpy as np
@@ -156,59 +157,48 @@ def run_all(
     results_max_agg = defaultdict(partial(defaultdict, partial(defaultdict, dict)))
     # enables instantiating hierarchy of dicts without manually creating them at each
     # level.
+
+    # get a list of 3-element tuples, with all posible combinations
+    combinations = list(product(predictors, subjects, shuffle_opts))
+
     results_max_path = os.path.join(base_dir, "results_max.json")
-    for current_predictor in predictors:
-        for current_subject in subjects:
-            for shuffle in shuffle_opts:
-                shuffle_str = "shuffled" if shuffle else "not_shuffled"
-                for current_n_train_stories in n_train_stories_list:
-                    output_dir = os.path.join(
-                        base_dir,
-                        current_predictor,
-                        current_subject,
-                        str(current_n_train_stories),
-                        shuffle_str,
-                    )
-                    check_make_dirs(output_dir, verbose=False, isdir=True)
-                    mean_scores, all_scores, all_weights, best_alphas = do_regression(
-                        strategy=strategy,
-                        predictor=current_predictor,
-                        n_train_stories=current_n_train_stories,
-                        n_repeats=n_repeats,
-                        subject=current_subject,
-                        n_delays=n_delays,
-                        interpolation=interpolation,
-                        use_cache=use_cache,
-                        shuffle=shuffle,
-                        show_results=False,
-                        keep_train_stories_in_mem=keep_train_stories_in_mem,
-                    )
-                    np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
-                    for idx_fold, (scores_fold, weights_fold, best_alpha) in enumerate(
-                        zip(all_scores, all_weights, best_alphas)
-                    ):
-                        output_dir_fold = os.path.join(output_dir, f"fold_{idx_fold}")
-                        check_make_dirs(output_dir_fold, verbose=False, isdir=True)
-                        np.save(
-                            os.path.join(output_dir_fold, "scores.npy"),
-                            scores_fold,
-                        )
-                        np.save(
-                            os.path.join(output_dir_fold, "weights.npy"),
-                            weights_fold,
-                        )
-                        np.save(
-                            os.path.join(output_dir_fold, "best_alphas.npy"),
-                            np.array(best_alpha),
-                        )
 
-                    results_max_agg[current_predictor][current_subject][
-                        current_n_train_stories
-                    ][shuffle_str] = mean_scores.max()
+    for combination_tuple in combinations:
+        current_predictor, current_subject, shuffle = combination_tuple
 
-                    # update results file
-                    with open(results_max_path, "w") as f_out:
-                        json.dump(results_max_agg, f_out, indent=4)
+        shuffle_str = "shuffled" if shuffle else "not_shuffled"
+
+        for current_n_train_stories in n_train_stories_list:
+            output_dir = os.path.join(
+                base_dir,
+                current_predictor,
+                current_subject,
+                str(current_n_train_stories),
+                shuffle_str,
+            )
+            check_make_dirs(output_dir, verbose=False, isdir=True)
+            mean_scores, _, _, _ = do_regression(
+                strategy=strategy,
+                predictor=current_predictor,
+                n_train_stories=current_n_train_stories,
+                n_repeats=n_repeats,
+                subject=current_subject,
+                n_delays=n_delays,
+                interpolation=interpolation,
+                use_cache=use_cache,
+                shuffle=shuffle,
+                show_results=False,
+                keep_train_stories_in_mem=keep_train_stories_in_mem,
+            )
+            np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
+
+            results_max_agg[current_predictor][current_subject][
+                current_n_train_stories
+            ][shuffle_str] = mean_scores.max()
+
+            # update results file
+            with open(results_max_path, "w") as f_out:
+                json.dump(results_max_agg, f_out, indent=4)
 
 
 if __name__ == "__main__":
