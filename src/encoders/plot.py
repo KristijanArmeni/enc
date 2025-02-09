@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 from typing import Dict, Optional
@@ -13,7 +14,7 @@ from encoders.utils import ROOT, check_make_dirs, get_logger, load_config
 log = get_logger(__name__)
 
 INKSCAPE_PATH = load_config().get("INKSCAPE_PATH")
-if not Path(INKSCAPE_PATH).is_file():
+if not Path(INKSCAPE_PATH).exists():
     log.critical(
         "INKSCAPE_PATH not valid. Install inkscape, and place path to"
         " excecutale into the config as INKSCAPE_PATH."
@@ -166,38 +167,34 @@ def plot_means(data_tuple):
     return fig
 
 
-n_stories = [1, 5, 12]
+n_stories = [1, 12, 20]
 
 
 # load the data
-def load_data_wrapper(ds: str, which: str):
+def load_data_wrapper(ds: str, n_stories, which: str):
     datadir = Path(ds, which, "UTS02")
-    rho_orig, rho_shuf = {}, {}
+    rho_orig = {}
     for n in n_stories:
         rho_orig[str(n)] = load_data(
             datapath=datadir, n_stories=str(n), condition="not_shuffled"
         )
-        rho_shuf[str(n)] = load_data(
-            datapath=datadir, n_stories=str(n), condition="shuffled"
-        )
+        # rho_shuf[str(n)] = load_data(
+        #    datapath=datadir, n_stories=str(n), condition="shuffled"
+        # )
 
-    return rho_orig, rho_shuf
+    return rho_orig
 
 
 def make_brain_plots(scores_dict):
     fig, ax = plt.subplots(1, 3, figsize=(12, 4), layout="constrained")
 
-    titles = {
-        "1": "1 Training story",
-        "5": "5 Training stories",
-        "12": "12 Training stories",
-    }
-    for i, n in enumerate(n_stories):
-        plot_voxel_performance(
-            scores=scores_dict[str(n)], subject="UTS02", vmin=0, vmax=0.5, ax=ax[i]
-        )
+    for i, items in enumerate(scores_dict.items()):
+        n, data = items
+        plot_voxel_performance(scores=data, subject="UTS02", vmin=0, vmax=0.5, ax=ax[i])
 
-        ax[i].set_title(titles[str(n)])
+        ax[i].set_title(
+            f"{n} Training story" if int(n) == 1 else f"{n} Training stories"
+        )
 
     cbar = ax[1].images[0].colorbar
     cbar.ax.set_xlabel("Test-set correlation", fontsize=12)
@@ -206,24 +203,82 @@ def make_brain_plots(scores_dict):
 
 
 def make_figure(run_dir, which):
-    rho_orig, _ = load_data_wrapper(ds=run_dir, which=which)
+    rho_orig = load_data_wrapper(ds=run_dir, which=which, n_stories=[1, 12, 20])
 
     fig = make_brain_plots(scores_dict=rho_orig)
 
     return fig
 
 
-if __name__ == "__main__":
-    cfg = load_config()
-    RUNS_DIR = cfg["RUNS_DIR"]
-    ds = RUNS_DIR + "/2024-11-06_15-34_361506"
-    SAVEPATH = Path(ROOT, "fig")
+def plot_training_curve(run_dir):
+    # load embedding model performance
+    embeds = load_data_wrapper(
+        ds=run_dir, which="embeddings", n_stories=[1, 3, 5, 7, 9, 11, 12, 15, 20]
+    )
 
+    # load audio envelope model performance
+    audio = load_data_wrapper(
+        ds=run_dir, which="envelope", n_stories=[1, 3, 5, 7, 9, 11, 12, 15, 20]
+    )
+
+    # load the performance scores and average across cortex shape = (n_stories,)
+    y_embeds = np.array([np.nanmean(data) for data in embeds.values()])
+    y_audio = np.array([np.nanmean(data) for data in audio.values()])
+
+    # figure
+    fig, ax = plt.subplots(figsize=(6, 4))
+
+    # ["1", "3", "5", ...]
+    x = embeds.keys()
+
+    ax.plot(x, y_embeds, "-o", label="Word embeddings")
+    ax.plot(x, y_audio, "-o", label="Audio envelope")
+
+    ax.legend(title="Predictor")
+    ax.set_title("Model performance with increasing training set size (UTS02)")
+
+    ax.set_xlabel("N Stories")
+    ax.set_ylabel("Mean test-set performance\n(average across all voxels)")
+    ax.grid(visible=True, lw=0.5, alpha=0.3)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
+
+    return fig
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        "plot.py",
+        description="",
+    )
+
+    parser.add_argument("run_dir", help="folder with results for the run to be ploted")
+
+    parser.add_argument("save_path", help="path to where the figures are saved")
+
+    args = parser.parse_args()
+
+    cfg = load_config()
+
+    RUNS_DIR = cfg["RUNS_DIR"]
+    ds = RUNS_DIR + "/" + args.run_dir
+
+    SAVEPATH = Path(args.save_path)
+
+    # embedding performance
     fig1 = make_figure(run_dir=ds, which="embeddings")
+    fig1.suptitle(
+        "Embedding encoding model performance with increasing training data",
+        fontsize=14,
+    )
     fn1 = str(SAVEPATH / "embedding_performance.svg")
     fig1.savefig(fn1)
     fig1.savefig(fn1.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
 
+    # audio envelope model performance
     fig2 = make_figure(run_dir=ds, which="envelope")
     fig2.suptitle(
         "Envelope encoding model performance with increasing training data", fontsize=14
@@ -232,32 +287,9 @@ if __name__ == "__main__":
     fig2.savefig(fn2)
     fig2.savefig(fn2.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
 
-    out = load_data_wrapper(ds=ds, which="embeddings")
+    # training curve figure
+    fig3 = plot_training_curve(run_dir=ds)
 
-    orig = out[0]
-    shuf = out[1]
-    y = np.zeros(len(orig))
-
-    y_orig = np.array([np.mean(data) for data in orig.values()])
-    y_orig_sem = np.array([sem(data) for data in orig.values()])
-    y_shuf = np.array([np.mean(data) for data in shuf.values()])
-
-    fig, ax = plt.subplots()
-
-    x = ["1", "5", "12"]
-
-    ax.plot(x, y_orig, "-o")
-
-    # plot sem
-    ax.fill_between(x, y1=y_orig + y_orig_sem, y2=y_orig - y_orig_sem, alpha=0.3)
-
-    # ax.plot(["1", "5", "12"], y_shuf)
-
-    ax.set_xlabel("N Stories")
-    ax.set_ylabel("Regression performance")
-
-    ax.grid(visible=True, lw=0.5, alpha=0.3)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
-    plt.show()
+    fn3 = str(SAVEPATH / "training_curve.svg")
+    fig3.savefig(fn3)
+    fig3.savefig(fn3.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
