@@ -30,6 +30,9 @@ mkdocs-material = "^9.5.50"
 markdown = "^3.7"
 pymdown-extensions = "^10.14.1"
 
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.4"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
