@@ -1,4 +1,4 @@
-name: Test Package Installation
+name: Installation and Tests
 
 on:
   push:
@@ -64,7 +64,7 @@ jobs:
       # create config.yml (users are expected to created it)
       - name: Prepare test configuration
         run: |
-          cp example_config.yaml config.yaml
+          cp config.example.yaml config.yaml
       
       - name: Run tests
         run: |
