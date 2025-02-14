@@ -12,6 +12,7 @@ nav:
       - "regression": "regression.md"
       - "features": "features.md"
       - "data": "data.md"
+      - "download_data": "download_data.md"
       - "utils": "utils.md"
 
 theme:
