@@ -16,13 +16,25 @@ DATASET_URL = "https://github.com/OpenNeuroDatasets/ds003020.git"
 def download_data(
     data_dir: Optional[str], stories: str, subjects: Union[str, list[str]]
 ):
-    """Downloads data needed to run code into data_dir.
+    """Downloads Lebel et al (2023) preprocessed data via Datalad API
+    from the Openneuro source repository (https://github.com/OpenNeuroDatasets/ds003020.git)
+    into <data_dir>.
 
     Parameters
     ----------
-    data_dir
+    data_dir: str, optional
+        The directory to store the downloaded data to.
+        If not provided, defaults to "ds003020".
+    stories: str
+        The stories to download ('all') or it defaults to 3 stories
+        ("souls", "alternateithicatom", "avatar").
+    subjects: Union[str, list[str]]
+        The subject datasets to download. Can be a single subject (e.g. 'UTS02') or
+        a list of subjects or a string 'all' to download data for all subjects.
 
-    stories
+    Returns
+    -------
+    None
 
     """
 
