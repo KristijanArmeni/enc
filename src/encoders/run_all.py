@@ -29,6 +29,7 @@ def run_all(
     subject: Union[str, list[str]] = "UTS02",
     n_delays: int = 5,
     interpolation: str = "lanczos",
+    ridge_implementation: str = "ridge_huth",
     do_shuffle: bool = False,
     use_cache: bool = True,
     keep_train_stories_in_mem: bool = True,
@@ -77,6 +78,10 @@ def run_all(
     interpolation : {"lanczos", "average"}, default="lanczos"
         Whether to use lanczos interpolation or just average the words within a TR.
         Only applies if `predictor=embeddings`.
+    ridge_implementation: {"ridgeCV", "ridge_huth"}, default="ridge_huth"
+        Which ridge regression implementation to use.
+        `ridgeCV` will use scikit-learn's RidgeCV.
+        `ridge_huth` will use the ridge regression implementation from Lebel et al.
     do_shuffle: book, default=False
         Whether or not to run model fits with predictors shuffled (as a control).
         A separate subfolder ('shuffled') will be created in the run folder with
@@ -140,6 +145,7 @@ def run_all(
         "subjects": subjects,  # resolved predictors
         "n_delays": n_delays,
         "interpolation": interpolation,
+        "ridge_implementation": ridge_implementation,
         "do_shuffle": shuffle_opts,
         "use_cache": use_cache,
         "keep_train_stories_in_mem": keep_train_stories_in_mem,
@@ -185,6 +191,7 @@ def run_all(
                 subject=current_subject,
                 n_delays=n_delays,
                 interpolation=interpolation,
+                ridge_implementation=ridge_implementation,
                 use_cache=use_cache,
                 shuffle=shuffle,
                 show_results=False,
@@ -277,6 +284,13 @@ if __name__ == "__main__":
         help="Interpolation method used for embeddings predictor.",
     )
     parser.add_argument(
+        "--ridge_implementation",
+        type=str,
+        choices=["ridgeCV", "ridge_huth"],
+        default="ridge_huth",
+        help="Which ridge regression implementation to use.",
+    )
+    parser.add_argument(
         "--do_shuffle",
         action="store_true",
         help="Whether or not to fit models with randomly shuffled predictors",
@@ -300,6 +314,7 @@ if __name__ == "__main__":
         subject=args.subject,
         n_delays=args.n_delays,
         interpolation=args.interpolation,
+        ridge_implementation=args.ridge_implementation,
         do_shuffle=args.do_shuffle,
         use_cache=not args.no_cache,
         keep_train_stories_in_mem=not args.no_keep_train_stories_in_mem,
