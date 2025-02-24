@@ -7,9 +7,8 @@ import cortex
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
-from scipy.stats import bootstrap, sem, trim_mean
 
-from encoders.utils import ROOT, check_make_dirs, get_logger, load_config
+from encoders.utils import check_make_dirs, get_logger, load_config
 
 log = get_logger(__name__)
 
@@ -123,50 +122,6 @@ def load_data(datapath, n_stories, condition):
     return np.load(fn)
 
 
-def get_perc(x1, perc):
-    return x1[x1 > np.percentile(x1, perc)]
-
-
-def trim_mean_wrapper(x):
-    return trim_mean(x, proportiontocut=0.1)
-
-
-def get_ci(x):
-    ci = bootstrap(
-        data=(x,), statistic=trim_mean_wrapper, n_resamples=500, confidence_level=0.95
-    ).confidence_interval
-
-    return (ci.low.item(), ci.high.item())
-
-
-def get_yerr(mean, ci):
-    return (mean - ci[0], ci[1] - mean)
-
-
-def plot_means(data_tuple):
-    data1 = data_tuple[0]
-    data2 = data_tuple[1]
-
-    fig, ax = plt.subplots(1, 2, figsize=(5, 4), layout="constrained", sharey=True)
-
-    ax[0].boxplot(data1, flierprops={"color": "gray"})
-    ax[1].boxplot(data2)
-
-    fig.supylabel("Mean test-set corr.\n(across top 1% voxels)", ha="center")
-    fig.supxlabel("N train stories", ha="center")
-
-    ax[0].set_title("Original")
-    ax[1].set_title("Shuffled")
-
-    for a in ax:
-        a.set_xticks([1, 2, 3], [1, 5, 12])
-        a.grid(visible=True, ls="--", alpha=0.6)
-        a.spines["top"].set_visible(False)
-        a.spines["right"].set_visible(False)
-
-    return fig
-
-
 n_stories = [1, 12, 20]
 
 
@@ -244,7 +199,6 @@ def plot_training_curve(run_dir):
     ax.spines["right"].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
 
     return fig
 
@@ -252,44 +206,54 @@ def plot_training_curve(run_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "plot.py",
-        description="",
+        description="Plot the replication figures and save as .pdf and .png",
     )
 
     parser.add_argument("run_dir", help="folder with results for the run to be ploted")
-
     parser.add_argument("save_path", help="path to where the figures are saved")
 
     args = parser.parse_args()
 
     cfg = load_config()
 
-    RUNS_DIR = cfg["RUNS_DIR"]
-    ds = RUNS_DIR + "/" + args.run_dir
-
     SAVEPATH = Path(args.save_path)
 
     # embedding performance
-    fig1 = make_figure(run_dir=ds, which="embeddings")
+    fig1 = make_figure(run_dir=args.run_dir, which="embeddings")
     fig1.suptitle(
         "Embedding encoding model performance with increasing training data",
         fontsize=14,
     )
-    fn1 = str(SAVEPATH / "embedding_performance.svg")
-    fig1.savefig(fn1)
-    fig1.savefig(fn1.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+
+    fn1 = str(SAVEPATH / "embeddings_performance.pdf")
+    log.info(f"Saving {fn1}")
+    fig1.savefig(fn1, bbox_inches="tight", transparent=True)
+
+    fn1_png = fn1.replace(".pdf", ".png")
+    log.info(f"Saving {fn1_png}")
+    fig1.savefig(fn1_png, bbox_inches="tight", dpi=300)
 
     # audio envelope model performance
-    fig2 = make_figure(run_dir=ds, which="envelope")
+    fig2 = make_figure(run_dir=args.run_dir, which="envelope")
     fig2.suptitle(
         "Envelope encoding model performance with increasing training data", fontsize=14
     )
-    fn2 = str(SAVEPATH / "envelope_performance.svg")
-    fig2.savefig(fn2)
-    fig2.savefig(fn2.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+
+    fn2 = str(SAVEPATH / "envelope_performance.pdf")
+    log.info(f"Saving {fn2}")
+    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+
+    fn2_png = fn2.replace(".pdf", ".png")
+    log.info(f"Saving {fn2_png}")
+    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
 
     # training curve figure
-    fig3 = plot_training_curve(run_dir=ds)
+    fig3 = plot_training_curve(run_dir=args.run_dir)
 
-    fn3 = str(SAVEPATH / "training_curve.svg")
-    fig3.savefig(fn3)
-    fig3.savefig(fn3.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+    fn3 = str(SAVEPATH / "training_curve.pdf")
+    log.info(f"Saving {fn3}")
+    fig3.savefig(fn3, bbox_inches="tight", transparent=True)
+
+    fn3_png = fn3.replace(".pdf", ".png")
+    log.info(f"Saving {fn3_png}")
+    fig3.savefig(fn3_png, bbox_inches="tight", dpi=300)
