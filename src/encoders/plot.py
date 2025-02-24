@@ -244,7 +244,6 @@ def plot_training_curve(run_dir):
     ax.spines["right"].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
 
     return fig
 
@@ -252,44 +251,54 @@ def plot_training_curve(run_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "plot.py",
-        description="",
+        description="Plot the replication figures and save as .pdf and .png",
     )
 
     parser.add_argument("run_dir", help="folder with results for the run to be ploted")
-
     parser.add_argument("save_path", help="path to where the figures are saved")
 
     args = parser.parse_args()
 
     cfg = load_config()
 
-    RUNS_DIR = cfg["RUNS_DIR"]
-    ds = RUNS_DIR + "/" + args.run_dir
-
     SAVEPATH = Path(args.save_path)
 
     # embedding performance
-    fig1 = make_figure(run_dir=ds, which="embeddings")
+    fig1 = make_figure(run_dir=args.run_dir, which="embeddings")
     fig1.suptitle(
         "Embedding encoding model performance with increasing training data",
         fontsize=14,
     )
-    fn1 = str(SAVEPATH / "embedding_performance.svg")
-    fig1.savefig(fn1)
-    fig1.savefig(fn1.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+
+    fn1 = str(SAVEPATH / "embeddings_performance.pdf")
+    log.info(f"Saving {fn1}")
+    fig1.savefig(fn1, bbox_inches="tight", transparent=True)
+
+    fn1_png = fn1.replace(".pdf", ".png")
+    log.info(f"Saving {fn1_png}")
+    fig1.savefig(fn1_png, bbox_inches="tight", dpi=300)
 
     # audio envelope model performance
-    fig2 = make_figure(run_dir=ds, which="envelope")
+    fig2 = make_figure(run_dir=args.run_dir, which="envelope")
     fig2.suptitle(
         "Envelope encoding model performance with increasing training data", fontsize=14
     )
-    fn2 = str(SAVEPATH / "envelope_performance.svg")
-    fig2.savefig(fn2)
-    fig2.savefig(fn2.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+
+    fn2 = str(SAVEPATH / "envelope_performance.pdf")
+    log.info(f"Saving {fn2}")
+    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+
+    fn2_png = fn2.replace(".pdf", ".png")
+    log.info(f"Saving {fn2_png}")
+    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
 
     # training curve figure
-    fig3 = plot_training_curve(run_dir=ds)
+    fig3 = plot_training_curve(run_dir=args.run_dir)
 
-    fn3 = str(SAVEPATH / "training_curve.svg")
-    fig3.savefig(fn3)
-    fig3.savefig(fn3.replace(".svg", ".png"), bbox_inches="tight", dpi=300)
+    fn3 = str(SAVEPATH / "training_curve.pdf")
+    log.info(f"Saving {fn3}")
+    fig3.savefig(fn3, bbox_inches="tight", transparent=True)
+
+    fn3_png = fn3.replace(".pdf", ".png")
+    log.info(f"Saving {fn3_png}")
+    fig3.savefig(fn3_png, bbox_inches="tight", dpi=300)
