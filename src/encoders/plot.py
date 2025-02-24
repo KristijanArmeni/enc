@@ -7,9 +7,8 @@ import cortex
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
-from scipy.stats import bootstrap, sem, trim_mean
 
-from encoders.utils import ROOT, check_make_dirs, get_logger, load_config
+from encoders.utils import check_make_dirs, get_logger, load_config
 
 log = get_logger(__name__)
 
@@ -121,50 +120,6 @@ def plot_aggregate_results(
 def load_data(datapath, n_stories, condition):
     fn = Path(datapath, n_stories, condition, "scores_mean.npy")
     return np.load(fn)
-
-
-def get_perc(x1, perc):
-    return x1[x1 > np.percentile(x1, perc)]
-
-
-def trim_mean_wrapper(x):
-    return trim_mean(x, proportiontocut=0.1)
-
-
-def get_ci(x):
-    ci = bootstrap(
-        data=(x,), statistic=trim_mean_wrapper, n_resamples=500, confidence_level=0.95
-    ).confidence_interval
-
-    return (ci.low.item(), ci.high.item())
-
-
-def get_yerr(mean, ci):
-    return (mean - ci[0], ci[1] - mean)
-
-
-def plot_means(data_tuple):
-    data1 = data_tuple[0]
-    data2 = data_tuple[1]
-
-    fig, ax = plt.subplots(1, 2, figsize=(5, 4), layout="constrained", sharey=True)
-
-    ax[0].boxplot(data1, flierprops={"color": "gray"})
-    ax[1].boxplot(data2)
-
-    fig.supylabel("Mean test-set corr.\n(across top 1% voxels)", ha="center")
-    fig.supxlabel("N train stories", ha="center")
-
-    ax[0].set_title("Original")
-    ax[1].set_title("Shuffled")
-
-    for a in ax:
-        a.set_xticks([1, 2, 3], [1, 5, 12])
-        a.grid(visible=True, ls="--", alpha=0.6)
-        a.spines["top"].set_visible(False)
-        a.spines["right"].set_visible(False)
-
-    return fig
 
 
 n_stories = [1, 12, 20]
