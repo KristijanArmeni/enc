@@ -149,7 +149,7 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "--subject",
+        "--subjects",
         nargs="+",
         type=str,
         default=["UTS02"],
@@ -168,4 +168,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    download_data(args.data_dir, args.stories, args.subject)
+    download_data(args.data_dir, args.stories, args.subjects)
