@@ -32,6 +32,7 @@ pymdown-extensions = "^10.14.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
+pre-commit = "^4.1.0"
 
 [build-system]
 requires = ["poetry-core"]
