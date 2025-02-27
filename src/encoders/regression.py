@@ -29,6 +29,30 @@ def zs(x: np.ndarray) -> np.ndarray:
     return (x - x.mean(axis=0)) / (x.std(axis=0) + 1e-6)
 
 
+def z_score(data: np.ndarray, means: np.ndarray, stds: np.ndarray) -> np.ndarray:
+    """
+    Return `data` z-scored by given `means` and standard deviations `stds`. Useful
+    to z-score after train/test splits with the same mean in cross-validation settings
+    to prevent data leakage.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        shape = (n_samples, n_features) or (n_samples,)
+    means : np.ndarray
+        shape = (n_features,) or (1, n_features)
+    stds : np.ndarray
+        shape = (n_features,) or (1, n_features)
+
+    Returns
+    -------
+    np.ndarray
+       Normalized data, shape = (n_samples, n_features) or (1, n_features)
+
+    """
+    return (data - means) / (stds + 1e-6)
+
+
 def pearsonr(x1: np.ndarray, x2: np.ndarray) -> Union[float, np.ndarray]:
     """Returns the pearson correlation between two vectors or two matrices of the same
     shape (in which case the correlation is computed for each pair of column vectors).
@@ -69,10 +93,6 @@ def pearsonr_scorer(estimator, X: np.ndarray, y: np.ndarray) -> float:
     """
     y_predict = estimator.predict(X)
     return pearsonr(y, y_predict)
-
-
-def z_score(data: np.ndarray, means: np.ndarray, stds: np.ndarray) -> np.ndarray:
-    return (data - means) / (stds + 1e-6)
 
 
 def ridge_regression(
