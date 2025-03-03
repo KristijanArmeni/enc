@@ -38,15 +38,15 @@ def load_wav(story: str) -> Tuple[int, np.ndarray]:
     return sample_rate, wav
 
 
-def get_tier_data(text_grid_lines: list) -> dict:
+def parse_textgrid(text_grid_lines: list) -> dict:
     lines = [line.strip("\n").strip() for line in text_grid_lines]
 
     # find what textgrid format it is
     text_grid_ftype = lines[0]  # this is always the first line
 
-    assert (
-        text_grid_ftype in TEXT_GRID_FORMATS
-    ), f"Unexpected textgrid format: {text_grid_ftype[0]}"
+    assert text_grid_ftype in TEXT_GRID_FORMATS, (
+        f"Unexpected textgrid format: {text_grid_ftype[0]}"
+    )
 
     if text_grid_ftype == TEXT_GRID_FORMATS[0]:
         """
@@ -93,9 +93,9 @@ def get_tier_data(text_grid_lines: list) -> dict:
             stoptimes = [float(e.strip("xmax = ").strip()) for e in stoptimes]
             textstrings = [e.strip("text = ").strip('"') for e in textstrings]
 
-            assert (
-                len(starttimes) == len(stoptimes) == len(textstrings)
-            ), f"{len(starttimes)}, {len(stoptimes)}, {len(textstrings)}"
+            assert len(starttimes) == len(stoptimes) == len(textstrings), (
+                f"{len(starttimes)}, {len(stoptimes)}, {len(textstrings)}"
+            )
 
             return starttimes, stoptimes, textstrings
 
@@ -187,9 +187,9 @@ def get_tier_data(text_grid_lines: list) -> dict:
 
         times = lines[5::2]
         words = lines[6::2]
-        assert len(times) == len(
-            words
-        ), f"Mismatch in number of elements ({len(times)}, {len(words)})"
+        assert len(times) == len(words), (
+            f"Mismatch in number of elements ({len(times)}, {len(words)})"
+        )
 
         phone_dict = {"start": [], "stop": [], "text": []}
         word_dict = {"start": [], "stop": [], "text": []}
@@ -205,24 +205,40 @@ def get_tier_data(text_grid_lines: list) -> dict:
                 word_dict["stop"].append(float(stop))
                 word_dict["text"].append(w.strip('"'))
 
-    return {n: d for n, d in zip(tier_names, [phone_dict, word_dict])}
+    # put everything into a dataframe
+    out: dict[str, Optional[pd.DataFrame]] = {n: None for n in ["phone", "word"]}
+
+    out["phone"] = pd.DataFrame(phone_dict, columns=phone_dict.keys())
+    out["word"] = pd.DataFrame(word_dict, columns=word_dict.keys())
+
+    return out
 
 
 def load_textgrid(story: str) -> dict[str, pd.DataFrame]:
+    """
+    Loads {story}.TextGrid from 'ds003020/derivative/TextGrids' folder.
+
+    Parameters
+    ----------
+    story: str
+        Story to load
+
+    Returns
+    -------
+    dict
+        Dictionary with keys 'phone' and 'word', each containing a dataframe
+        with phone and word onset times, respectfully.
+
+    """
     textgrid_dir = DATADIR / "derivative" / "TextGrids"
     fn = textgrid_dir / f"{story}.TextGrid"
 
     with open(fn, "r") as f:
         lines = f.readlines()
 
-    tiers_dict = get_tier_data(lines)
+    word_phone_dict = parse_textgrid(lines)
 
-    out: dict[str, Optional[pd.DataFrame]] = {n: None for n in tiers_dict.keys()}
-
-    out["phone"] = pd.DataFrame(tiers_dict["phone"], columns=tiers_dict["phone"].keys())
-    out["word"] = pd.DataFrame(tiers_dict["word"], columns=tiers_dict["word"].keys())
-
-    return out  # type: ignore
+    return word_phone_dict  # type: ignore
 
 
 def load_fmri(story: str, subject: str) -> np.ndarray:
