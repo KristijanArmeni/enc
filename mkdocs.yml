@@ -8,7 +8,6 @@ nav:
       - Intro: https://kristijanarmeni.github.io/encoders_report" target="_blank
   - "Documentation":
       - "run_all": "run_all.md"
-      - "main": "main.md"
       - "regression": "regression.md"
       - "features": "features.md"
       - "data": "data.md"
