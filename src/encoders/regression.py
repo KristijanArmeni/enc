@@ -543,7 +543,6 @@ def do_regression(
     use_cache: bool = True,
     shuffle: bool = False,
     seed: Optional[int] = 123,
-    show_results: bool = True,
     keep_train_stories_in_mem: bool = True,
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
@@ -656,31 +655,9 @@ def do_regression(
     else:
         raise ValueError(f"Invalid regression strategy: {strategy}")
 
-    if show_results:
-        plt.plot(mean_scores)
-        plt.show()
     log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
     log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
 
-    if show_results:
-        vol_data = cortex.Volume(
-            mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
-        )
-
-        cortex.quickshow(vol_data)
-        plt.title(f"{subject} {predictor} performance.")
-        plt.show()
-        plt.savefig(
-            os.path.join("data", f"{predictor}_{subject}_{n_train_stories}.png")
-        )
-        # save the plot
-        _ = cortex.quickflat.make_png(
-            os.path.join("data", f"{predictor}_{strategy}_{subject}.png"),
-            vol_data,
-            recache=False,
-        )
-        # without print statement the plot does not show up.
-        print("Done")
     return mean_scores, all_scores, all_weights, best_alphas
 
 

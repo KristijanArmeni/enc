@@ -204,7 +204,6 @@ def run_all(
                 ridge_implementation=ridge_implementation,
                 use_cache=use_cache,
                 shuffle=shuffle,
-                show_results=False,
                 keep_train_stories_in_mem=keep_train_stories_in_mem,
             )
             np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
