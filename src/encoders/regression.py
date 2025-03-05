@@ -8,8 +8,8 @@ from typing import Callable, Optional, Union
 import cortex
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn import KFold
 from sklearn.linear_model import RidgeCV
+from sklearn.model_selection import KFold
 
 from encoders.features import load_data_dict
 from encoders.utils import counter, get_logger, load_config
@@ -473,7 +473,7 @@ def do_simple_regression(
             set(curr_all_stories).difference(set(X_data_dict.keys()))
         )
         if len(stories_to_load) > 0:
-            log.info(f"{repeat} | Loading data")
+            log.info("Loading data")
             X_data_dict_new, y_data_dict_new = load_data_dict(
                 stories_to_load,
                 subject,
@@ -488,7 +488,10 @@ def do_simple_regression(
             y_data_dict.update(y_data_dict_new)
 
         # 3. run regression
-        log.info(f"{repeat} | Running Regression")
+        log.info(
+            f"Running regression | n_train_stories: {n_train_stories}"
+            + " | implementation: {ridge_implementation}"
+        )
         if ridge_implementation == "ridge_huth":
             scores, weights, best_alphas = ridge_regression_huth(
                 train_stories=curr_train_stories,
@@ -505,8 +508,8 @@ def do_simple_regression(
                 y_data_dict=y_data_dict,
                 score_fct=pearsonr,  # type: ignore
             )
-        log.info(f"{repeat} | Mean corr: {scores.mean()}")
-        log.info(f"{repeat} | Max corr : {scores.max()}")
+        log.info(f"Mean corr: {scores.mean()}")
+        log.info(f"Max corr : {scores.max()}")
 
         if not keep_train_stories_in_mem:
             del X_data_dict
