@@ -137,8 +137,10 @@ def run_all(
     # if run folder name not given, create one
     if not args.run_folder_name:
         run_folder_name = create_run_folder_name()
-        run_folder = os.path.join(RUNS_DIR, run_folder_name)
+    else:
+        run_folder_name = args.run_folder_name
 
+    run_folder = os.path.join(RUNS_DIR, run_folder_name)
     check_make_dirs(run_folder, isdir=True)
 
     # log all parameters
