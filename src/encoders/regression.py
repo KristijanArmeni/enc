@@ -8,8 +8,9 @@ from typing import Callable, Optional, Union
 import cortex
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn import KFold
+from scipy.stats import sem
 from sklearn.linear_model import RidgeCV
+from sklearn.model_selection import KFold
 
 from encoders.features import load_data_dict
 from encoders.utils import counter, get_logger, load_config
@@ -344,10 +345,7 @@ def do_loocv_regression(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    # aggregate scores
-    mean_scores = np.mean(scores_list, axis=0)
-
-    return mean_scores, scores_list, weights_list, best_alphas_list
+    return scores_list, weights_list, best_alphas_list
 
 
 def do_simple_regression(
@@ -473,7 +471,7 @@ def do_simple_regression(
             set(curr_all_stories).difference(set(X_data_dict.keys()))
         )
         if len(stories_to_load) > 0:
-            log.info(f"{repeat} | Loading data")
+            log.info("Loading data")
             X_data_dict_new, y_data_dict_new = load_data_dict(
                 stories_to_load,
                 subject,
@@ -488,7 +486,10 @@ def do_simple_regression(
             y_data_dict.update(y_data_dict_new)
 
         # 3. run regression
-        log.info(f"{repeat} | Running Regression")
+        log.info(
+            f"Running regression | n_train_stories: {n_train_stories}"
+            + f" | implementation: {ridge_implementation}"
+        )
         if ridge_implementation == "ridge_huth":
             scores, weights, best_alphas = ridge_regression_huth(
                 train_stories=curr_train_stories,
@@ -505,8 +506,8 @@ def do_simple_regression(
                 y_data_dict=y_data_dict,
                 score_fct=pearsonr,  # type: ignore
             )
-        log.info(f"{repeat} | Mean corr: {scores.mean()}")
-        log.info(f"{repeat} | Max corr : {scores.max()}")
+        log.info(f"Mean corr: {scores.mean()}")
+        log.info(f"Max corr : {scores.max()}")
 
         if not keep_train_stories_in_mem:
             del X_data_dict
@@ -519,10 +520,7 @@ def do_simple_regression(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    # aggregate scores
-    mean_scores = np.mean(scores_list, axis=0)
-
-    return mean_scores, scores_list, weights_list, best_alphas_list
+    return scores_list, weights_list, best_alphas_list
 
 
 def do_regression(
@@ -540,7 +538,6 @@ def do_regression(
     use_cache: bool = True,
     shuffle: bool = False,
     seed: Optional[int] = 123,
-    show_results: bool = True,
     keep_train_stories_in_mem: bool = True,
 ) -> tuple[
     np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
@@ -621,7 +618,7 @@ def do_regression(
         n_train_stories = len(stories) - 1
 
     if strategy == "loocv":
-        mean_scores, all_scores, all_weights, best_alphas = do_loocv_regression(
+        all_scores, all_weights, best_alphas = do_loocv_regression(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -634,7 +631,7 @@ def do_regression(
             shuffle=shuffle,
         )
     elif strategy == "simple":
-        mean_scores, all_scores, all_weights, best_alphas = do_simple_regression(
+        all_scores, all_weights, best_alphas = do_simple_regression(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -653,32 +650,14 @@ def do_regression(
     else:
         raise ValueError(f"Invalid regression strategy: {strategy}")
 
-    if show_results:
-        plt.plot(mean_scores)
-        plt.show()
+    # aggregate scores
+    mean_scores = np.mean(all_scores, axis=0)
+    sem_scores = sem(all_scores, axis=0)
+
     log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
     log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
 
-    if show_results:
-        vol_data = cortex.Volume(
-            mean_scores, subject, f"{subject}_auto", vmin=0, vmax=0.5, cmap="inferno"
-        )
-
-        cortex.quickshow(vol_data)
-        plt.title(f"{subject} {predictor} performance.")
-        plt.show()
-        plt.savefig(
-            os.path.join("data", f"{predictor}_{subject}_{n_train_stories}.png")
-        )
-        # save the plot
-        _ = cortex.quickflat.make_png(
-            os.path.join("data", f"{predictor}_{strategy}_{subject}.png"),
-            vol_data,
-            recache=False,
-        )
-        # without print statement the plot does not show up.
-        print("Done")
-    return mean_scores, all_scores, all_weights, best_alphas
+    return (mean_scores, sem_scores), (all_scores, all_weights, best_alphas)
 
 
 ######### Below is the original code from the Huth lab's implementation #########

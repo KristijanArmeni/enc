@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import time
 from datetime import datetime
 from pathlib import Path
@@ -73,12 +74,15 @@ def check_make_dirs(
             log.info(f"Output path: {path}")
 
 
-def create_run_folder_name() -> str:
+def create_run_folder_name(seed=None) -> str:
     """Returns the name of the run folder including
     a random id and the current date."""
 
+    if seed:
+        random.seed(seed)
+
     date = datetime.today().strftime("%Y-%m-%d_%H-%M")
-    rand_num = "".join(choices("0123456789", k=6))
+    rand_num = "".join(random.choices("0123456789", k=6))
     return f"{date}_{rand_num}"
 
 
