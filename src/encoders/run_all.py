@@ -130,9 +130,9 @@ def run_all(
         shuffle_opts = [False, True]
 
     # handle data folder
-    folder_name = create_run_folder_name()
-    base_dir = os.path.join(RUNS_DIR, folder_name)
-    check_make_dirs(base_dir, isdir=True)
+    run_folder_name = create_run_folder_name()
+    run_folder = os.path.join(RUNS_DIR, run_folder_name)
+    check_make_dirs(run_folder, isdir=True)
 
     # log all parameters
     config = {
@@ -154,7 +154,7 @@ def run_all(
     log.info(f"Running experiment with the following parameters:\n{json.dumps(config)}")
 
     # update results file
-    params_path = os.path.join(base_dir, "params.json")
+    params_path = os.path.join(run_folder, "params.json")
     with open(params_path, "w") as f_out:
         json.dump(config, f_out, indent=4)
     log.info(f"Written parameters to {params_path}")
@@ -167,7 +167,7 @@ def run_all(
     # get a list of 3-element tuples, with all posible combinations
     combinations = list(product(predictors, subjects, shuffle_opts))
 
-    results_max_path = os.path.join(base_dir, "results_max.json")
+    results_max_path = os.path.join(run_folder, "results_max.json")
 
     for combination_tuple in combinations:
         current_predictor, current_subject, shuffle = combination_tuple
@@ -176,9 +176,9 @@ def run_all(
 
         for current_n_train_stories in n_train_stories_list:
             output_dir = os.path.join(
-                base_dir,
-                current_predictor,
+                run_folder,
                 current_subject,
+                current_predictor,
                 str(current_n_train_stories),
                 shuffle_str,
             )
