@@ -193,7 +193,7 @@ def run_all(
                 shuffle_str,
             )
             check_make_dirs(output_dir, verbose=False, isdir=True)
-            mean_scores, _, _, _ = do_regression(
+            summary_scores, _ = do_regression(
                 strategy=strategy,
                 predictor=current_predictor,
                 n_train_stories=current_n_train_stories,
@@ -206,7 +206,10 @@ def run_all(
                 shuffle=shuffle,
                 keep_train_stories_in_mem=keep_train_stories_in_mem,
             )
+
+            mean_scores, sem_scores = summary_scores
             np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
+            np.save(os.path.join(output_dir, "scores_sem.npy"), sem_scores)
 
             results_max_agg[current_predictor][current_subject][
                 current_n_train_stories
