@@ -8,6 +8,7 @@ from typing import Callable, Optional, Union
 import cortex
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.stats import sem
 from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold
 
@@ -344,10 +345,7 @@ def do_loocv_regression(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    # aggregate scores
-    mean_scores = np.mean(scores_list, axis=0)
-
-    return mean_scores, scores_list, weights_list, best_alphas_list
+    return scores_list, weights_list, best_alphas_list
 
 
 def do_simple_regression(
@@ -490,7 +488,7 @@ def do_simple_regression(
         # 3. run regression
         log.info(
             f"Running regression | n_train_stories: {n_train_stories}"
-            + " | implementation: {ridge_implementation}"
+            + f" | implementation: {ridge_implementation}"
         )
         if ridge_implementation == "ridge_huth":
             scores, weights, best_alphas = ridge_regression_huth(
@@ -522,10 +520,7 @@ def do_simple_regression(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    # aggregate scores
-    mean_scores = np.mean(scores_list, axis=0)
-
-    return mean_scores, scores_list, weights_list, best_alphas_list
+    return scores_list, weights_list, best_alphas_list
 
 
 def do_regression(
@@ -623,7 +618,7 @@ def do_regression(
         n_train_stories = len(stories) - 1
 
     if strategy == "loocv":
-        mean_scores, all_scores, all_weights, best_alphas = do_loocv_regression(
+        all_scores, all_weights, best_alphas = do_loocv_regression(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -636,7 +631,7 @@ def do_regression(
             shuffle=shuffle,
         )
     elif strategy == "simple":
-        mean_scores, all_scores, all_weights, best_alphas = do_simple_regression(
+        all_scores, all_weights, best_alphas = do_simple_regression(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -655,10 +650,14 @@ def do_regression(
     else:
         raise ValueError(f"Invalid regression strategy: {strategy}")
 
+    # aggregate scores
+    mean_scores = np.mean(all_scores, axis=0)
+    sem_scores = sem(all_scores, axis=0)
+
     log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
     log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
 
-    return mean_scores, all_scores, all_weights, best_alphas
+    return (mean_scores, sem_scores), (all_scores, all_weights, best_alphas)
 
 
 ######### Below is the original code from the Huth lab's implementation #########
