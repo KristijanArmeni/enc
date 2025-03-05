@@ -33,6 +33,7 @@ def run_all(
     do_shuffle: bool = False,
     use_cache: bool = True,
     keep_train_stories_in_mem: bool = True,
+    run_folder_name: str = "",
 ):
     """Runs encoding models n_repeat times and saves results data/runs to disk.
 
@@ -93,6 +94,10 @@ def run_all(
         Whether stories are kept in memory after first loading. Unless when using all
         stories turning this off will reduce the memory footprint, but increase the
         time is spent loading data. Only works if `strategy='simple'`.
+    run_folder_name: str, optional
+        The name of the folder in the runs directory (as specificed in
+        `encoders.utils.load_config()['RUNS_DIR']`) to save the results in.
+        If it doesn't exist, it is created on the fly.
     """
 
     # put arguments in right format
@@ -129,9 +134,11 @@ def run_all(
     if do_shuffle:
         shuffle_opts = [False, True]
 
-    # handle data folder
-    run_folder_name = create_run_folder_name()
-    run_folder = os.path.join(RUNS_DIR, run_folder_name)
+    # if run folder name not given, create one
+    if not args.run_folder_name:
+        run_folder_name = create_run_folder_name()
+        run_folder = os.path.join(RUNS_DIR, run_folder_name)
+
     check_make_dirs(run_folder, isdir=True)
 
     # log all parameters
@@ -169,6 +176,7 @@ def run_all(
 
     results_max_path = os.path.join(run_folder, "results_max.json")
 
+    # run the regression pipeline
     for combination_tuple in combinations:
         current_predictor, current_subject, shuffle = combination_tuple
 
@@ -305,6 +313,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether stories are kept in memory after first loading.",
     )
+    parser.add_argument(
+        "--run_folder_name",
+        type=str,
+    )
     args = parser.parse_args()
     run_all(
         strategy=args.strategy,
@@ -318,4 +330,5 @@ if __name__ == "__main__":
         do_shuffle=args.do_shuffle,
         use_cache=not args.no_cache,
         keep_train_stories_in_mem=not args.no_keep_train_stories_in_mem,
+        run_folder_name=args.run_folder_name,
     )
