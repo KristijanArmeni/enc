@@ -274,7 +274,7 @@ def ridge_regression_huth(
     return scores, wt, bestalphas
 
 
-def do_loocv_regression(
+def crossval_loocv(
     predictor: str = "embeddings",
     stories: list[str] = STORIES,
     n_train_stories: Optional[int] = None,
@@ -348,7 +348,7 @@ def do_loocv_regression(
     return scores_list, weights_list, best_alphas_list
 
 
-def do_simple_regression(
+def crossval_simple(
     predictor: str = "embeddings",
     stories: list[str] = STORIES,
     n_train_stories: Optional[int] = None,
@@ -384,8 +384,8 @@ def do_simple_regression(
         The story on which the regression models will be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        If `strategy="simple"`, determines how often regression is repeated on a
-        different train/test set.
+        If `cross_validation="simple"`, determines how often regression is
+        repeated on a different train/test set.
     subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
         default="UTS02"
         Subject identifier
@@ -524,7 +524,7 @@ def do_simple_regression(
 
 
 def do_regression(
-    strategy: str = "loocv",
+    cross_validation: str = "loocv",
     predictor: str = "embeddings",
     stories: list[str] = STORIES,
     n_train_stories: Optional[int] = None,
@@ -546,7 +546,7 @@ def do_regression(
 
     Parameters
     ----------
-    strategy : {"loocv", "simple"}, default="loocv"
+    cross_validation : {"loocv", "simple"}, default="loocv"
         `loocv` uses leave-one-out cross-validation for n_stories. The stories are
         determined by the order of the `stories` parameter or its default value in
         `config.yaml`.
@@ -564,12 +564,12 @@ def do_regression(
         The amount of training stories sampled from `stories`, if this is `None` will
         use all except one story.
     test_story : str or `None`, default=`None`
-        Only used if `strategy="simple"`. The story on which the regression models will
-        be tested.
+        Only used if `cross_validation="simple"`. The story on which
+        the regression models will be tested.
         If `None`, the test story will be randomly selected from the pool of stories.
     n_repeats : int, default=5
-        Only used if `strategy="simple"`. Determines how often regression is repeated
-        on a different train/test set.
+        Only used if `cross_validation="simple"`. Determines how often
+        regression is repeated on a different train/test set.
     subject : {"UTS01", "UTS02", "UTS03", "UTS04", "UTS05", "UTS06", "UTS07", "UTS08"},
         default="UTS02"
         Subject identifier
@@ -599,7 +599,7 @@ def do_regression(
     keep_train_stories_in_mem: bool, default=True
         Whether stories are kept in memory after first loading. Unless when using all
         stories turning this off will reduce the memory footprint, but increase the
-        time is spent loading data. Only works if `strategy='simple'`.
+        time is spent loading data. Only works if `cross_validation='simple'`.
 
 
     Returns
@@ -617,8 +617,8 @@ def do_regression(
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
 
-    if strategy == "loocv":
-        all_scores, all_weights, best_alphas = do_loocv_regression(
+    if cross_validation == "loocv":
+        all_scores, all_weights, best_alphas = crossval_loocv(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -630,8 +630,8 @@ def do_regression(
             use_cache=use_cache,
             shuffle=shuffle,
         )
-    elif strategy == "simple":
-        all_scores, all_weights, best_alphas = do_simple_regression(
+    elif cross_validation == "simple":
+        all_scores, all_weights, best_alphas = crossval_simple(
             predictor=predictor,
             stories=stories,
             n_train_stories=n_train_stories,
@@ -648,7 +648,7 @@ def do_regression(
             keep_train_stories_in_mem=keep_train_stories_in_mem,
         )
     else:
-        raise ValueError(f"Invalid regression strategy: {strategy}")
+        raise ValueError(f"Invalid cross validation method: {cross_validation}")
 
     # aggregate scores
     mean_scores = np.mean(all_scores, axis=0)

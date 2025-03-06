@@ -22,7 +22,7 @@ RUNS_DIR = load_config()["RUNS_DIR"]
 
 
 def run_all(
-    strategy: str = "simple",
+    cross_validation: str = "simple",
     predictor: Union[str, list[str]] = "all",
     n_train_stories: Union[int, list[int]] = [1, 3, 5],
     n_repeats: int = 5,
@@ -52,7 +52,7 @@ def run_all(
 
     Parameters
     ----------
-    strategy : {"loocv", "simple"}, default="simple"
+    cross_validation : {"loocv", "simple"}, default="simple"
         `loocv` uses leave-one-out cross-validation for n_stories. The stories are
          determined by the order of the `stories` parameter or its default value in
          `config.yaml`.
@@ -93,7 +93,7 @@ def run_all(
     keep_train_stories_in_mem: bool, default=True
         Whether stories are kept in memory after first loading. Unless when using all
         stories turning this off will reduce the memory footprint, but increase the
-        time is spent loading data. Only works if `strategy='simple'`.
+        time is spent loading data. Only works if `cross_validation='simple'`.
     run_folder_name: str, optional
         The name of the folder in the runs directory (as specificed in
         `encoders.utils.load_config()['RUNS_DIR']`) to save the results in.
@@ -145,7 +145,7 @@ def run_all(
 
     # log all parameters
     config = {
-        "strategy": strategy,
+        "cross_validation": cross_validation,
         "predictor_arg": predictor,
         "predictors": predictors,
         "n_train_stories": n_train_stories,
@@ -194,7 +194,7 @@ def run_all(
             )
             check_make_dirs(output_dir, verbose=False, isdir=True)
             summary_scores, _ = do_regression(
-                strategy=strategy,
+                cross_validation=cross_validation,
                 predictor=current_predictor,
                 n_train_stories=current_n_train_stories,
                 n_repeats=n_repeats,
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         description="",
     )
     parser.add_argument(
-        "--strategy",
+        "--cross_validation",
         choices=["simple", "loocv"],
         default="loocv",
         help=(
@@ -251,7 +251,7 @@ if __name__ == "__main__":
         type=int,
         default=[1, 3, 5],
         help=(
-            "Only used if `strategy='simple'`."
+            "Only used if `cross_validation='simple'`."
             " Amount of training stories, can be one or multiple amounts."
         ),
     )
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         default=5,
         type=int,
         help=(
-            "Only used if `strategy='simple'`. Determines how often regression"
+            "Only used if `cross_validation='simple'`. Determines how often regression"
             " is repeated on a different train/test set."
         ),
     )
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     run_all(
-        strategy=args.strategy,
+        cross_validation=args.cross_validation,
         predictor=args.predictor,
         n_train_stories=args.n_train_stories,
         n_repeats=args.n_repeats,
