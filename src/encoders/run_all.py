@@ -5,7 +5,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import product
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -26,6 +26,7 @@ def run_all(
     cross_validation: str = "simple",
     predictor: Union[str, list[str]] = "all",
     n_train_stories: Union[int, list[int]] = [1, 3, 5],
+    test_story: Optional[str] = None,
     n_repeats: int = 5,
     subject: Union[str, list[str]] = "UTS02",
     n_delays: int = 5,
@@ -69,6 +70,8 @@ def run_all(
     n_train_stories : int or list of int
         Number o of training stories for the encoding model. If a list is given, the
          encoding model will be fitted with each number separately.
+    test_story : Optional[str] or None, default = None
+        The story to use as the test set. If `None`, it will be sampled randomly.
     subject : str or list of str, default="UTS02"
         Subject identifier.
         Can be one or a list of : {`"all"`, `"UTS01"`, `"UTS02"`, `"UTS03"`, `"UTS04"`,
@@ -150,6 +153,7 @@ def run_all(
         "predictor_arg": predictor,
         "predictors": predictors,
         "n_train_stories": n_train_stories,
+        "test_story": test_story,
         "n_repeats": n_repeats,
         "subject_arg": subject,  # command line arguments
         "subjects": subjects,  # resolved predictors
@@ -198,6 +202,7 @@ def run_all(
                 cross_validation=cross_validation,
                 predictor=current_predictor,
                 n_train_stories=current_n_train_stories,
+                test_story=test_story,
                 n_repeats=n_repeats,
                 subject=current_subject,
                 n_delays=n_delays,
@@ -254,6 +259,18 @@ if __name__ == "__main__":
         help=(
             "Only used if `cross_validation='simple'`."
             " Amount of training stories, can be one or multiple amounts."
+        ),
+    )
+    parser.add_argument(
+        "--test_story",
+        type=str,
+        default=None,
+        help=(
+            "`str` or `None`, default=`None`"
+            " Only used if `cross_validation='simple'`. The story on which"
+            " the regression models will be tested."
+            " If `None`, the test story will be randomly selected"
+            " from the pool of stories."
         ),
     )
     parser.add_argument(
@@ -327,6 +344,7 @@ if __name__ == "__main__":
         cross_validation=args.cross_validation,
         predictor=args.predictor,
         n_train_stories=args.n_train_stories,
+        test_story=args.test_story,
         n_repeats=args.n_repeats,
         subject=args.subject,
         n_delays=args.n_delays,
