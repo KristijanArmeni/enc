@@ -32,8 +32,11 @@ def load_wav(story: str) -> Tuple[int, np.ndarray]:
 
     wav_path = Path(DATADIR, WAV_DIR, f"{story}.wav")
     sample_rate, wav = wavfile.read(wav_path)
+
+    n_chans = wav.shape[1] if len(wav.shape) == 2 else 1
+
     log.info(
-        f"{story}.wav | channels: {wav.shape[1]} | length {wav.shape[0] / sample_rate}s"
+        f"{story}.wav | channels: {n_chans} | length {wav.shape[0] / sample_rate}s"
     )
     return sample_rate, wav
 

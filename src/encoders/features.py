@@ -82,7 +82,10 @@ def load_envelope_data(
 
     sfreq, wav_data = load_wav(story)
 
-    wav_data = np.mean(wav_data, axis=1)
+    # if .wav array has two channel, take the mean
+    if len(wav_data.shape) == 2:
+        log.info("Wav has 2 channels, averaging across chanel dimension.")
+        wav_data = np.mean(wav_data, axis=1)
 
     X_envelope = get_envelope(wav_data)
     X_trimmed = trim(X_envelope, sfreq)
