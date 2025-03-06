@@ -66,7 +66,7 @@ def check_make_dirs(
     if not isinstance(paths, list):
         paths = [paths]
     for path in paths:
-        if isdir and path != "" and not os.path.exists(path):
+        if isdir and (path != "") and (not os.path.exists(path)):
             os.makedirs(path)
         elif os.path.dirname(path) != "" and not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))

@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 from functools import partial
 from itertools import product
+from pathlib import Path
 from typing import Union
 
 import numpy as np
@@ -141,7 +142,7 @@ def run_all(
         run_folder_name = args.run_folder_name
 
     run_folder = os.path.join(RUNS_DIR, run_folder_name)
-    check_make_dirs(run_folder, isdir=True)
+    Path(run_folder).mkdir(parents=True, exist_ok=True)
 
     # log all parameters
     config = {
@@ -192,7 +193,7 @@ def run_all(
                 str(current_n_train_stories),
                 shuffle_str,
             )
-            check_make_dirs(output_dir, verbose=False, isdir=True)
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
             summary_scores, _ = do_regression(
                 cross_validation=cross_validation,
                 predictor=current_predictor,
