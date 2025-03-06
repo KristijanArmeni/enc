@@ -276,7 +276,7 @@ def ridge_regression_huth(
 
 def crossval_loocv(
     predictor: str = "embeddings",
-    stories: list[str] = STORIES,
+    stories: Union[list[str], None] = None,
     n_train_stories: Optional[int] = None,
     subject: str = "UTS02",
     tr_len: float = 2.0,
@@ -291,6 +291,9 @@ def crossval_loocv(
 ]:
     # 1. choose stories
     # the order of stories is determined in config.yaml or via the argument.
+    if stories is None:
+        stories = STORIES.copy()
+
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
     stories = stories[: (n_train_stories + 1)]
@@ -350,7 +353,7 @@ def crossval_loocv(
 
 def crossval_simple(
     predictor: str = "embeddings",
-    stories: list[str] = STORIES,
+    stories: Union[list[str], None] = None,
     n_train_stories: Optional[int] = None,
     test_story: Optional[str] = None,
     n_repeats: int = 5,
@@ -429,6 +432,9 @@ def crossval_simple(
     alphas : list of float or list of np.ndarray
         The best alphas for each voxel, for each repeat.
     """
+
+    if stories is None:
+        stories = STORIES.copy()
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
@@ -526,7 +532,7 @@ def crossval_simple(
 def do_regression(
     cross_validation: str = "loocv",
     predictor: str = "embeddings",
-    stories: list[str] = STORIES,
+    stories: Union[list[str], None] = None,
     n_train_stories: Optional[int] = None,
     test_story: Optional[str] = None,
     n_repeats: int = 5,
@@ -613,6 +619,9 @@ def do_regression(
     alphas : list of float or list of np.ndarray
         The best alphas for each voxel, for each repeat/split.
     """
+
+    if stories is None:
+        stories = STORIES.copy()
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1

@@ -189,6 +189,8 @@ def run_all(
 
         shuffle_str = "shuffled" if shuffle else "not_shuffled"
 
+        stories = load_config()["STORIES"].copy()
+
         for current_n_train_stories in n_train_stories_list:
             output_dir = os.path.join(
                 run_folder,
@@ -201,6 +203,7 @@ def run_all(
             summary_scores, _ = do_regression(
                 cross_validation=cross_validation,
                 predictor=current_predictor,
+                stories=stories,
                 n_train_stories=current_n_train_stories,
                 test_story=test_story,
                 n_repeats=n_repeats,
