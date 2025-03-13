@@ -8,10 +8,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
 
-from encoders.utils import check_make_dirs, get_logger, load_config
+from encoders.utils import get_logger, load_config
 
 log = get_logger(__name__)
 
+SUBJECT_IDS = ["UTS01", "UTS02", "UTS03"]
+
+# make sure inkscape is installed
 INKSCAPE_PATH = load_config().get("INKSCAPE_PATH")
 if not Path(INKSCAPE_PATH).exists():
     log.critical(
@@ -22,6 +25,7 @@ if not Path(INKSCAPE_PATH).exists():
 
     sys.exit(-1)
 
+# add inkscape path to PATH
 os.environ["PATH"] = INKSCAPE_PATH + ":" + os.environ["PATH"]
 svgoverlay.INKSCAPE_VERSION = str(load_config()["INKSCAPE_VERSION"])
 
@@ -29,7 +33,6 @@ svgoverlay.INKSCAPE_VERSION = str(load_config()["INKSCAPE_VERSION"])
 def plot_voxel_performance(
     subject: str,
     scores: np.ndarray,
-    show_plot: bool = False,
     ax=None,
     vmin: Optional[float] = 0.0,
     vmax: Optional[float] = 0.5,
@@ -72,75 +75,36 @@ def plot_voxel_performance(
     return None
 
 
-def plot_aggregate_results(
-    results: Dict[str, Dict],
-    save_path: Optional[str],
-    show_plot: bool = False,
-    title: Optional[str] = None,
-):
-    """Plots a line plot with aggregate results over the amount of training stories.
-
-    Parameters
-    ----------
-    results : Dict
-        The scores for each voxel
-    save_path : str or None
-        Path to save the plot. If `None`, plot will not be saved.
-    show_plot : bool, optional
-        Whether to show the plot or not.
-    title : str, optional
-        Title for the plot. If `None`, no title will be shown.
-    """
-
-    fig, ax = plt.subplots()
-
-    for predictor, predictor_results in results.items():
-        x = []
-        y = []
-        for n_stories, value in predictor_results.items():
-            x.append(int(n_stories))
-            y.append(value)
-
-        ax.plot(x, y, label=predictor)
-
-    plt.xlabel("N stories")
-    plt.ylabel("Correlation")
-    plt.legend(loc="upper left")
-
-    if title is not None:
-        ax.title(title)  # type: ignore
-    if show_plot:
-        plt.show()
-
-    if save_path is not None:
-        check_make_dirs(save_path)
-        fig.savefig(save_path)
-
-
 def load_data(datapath, n_stories, condition):
     fn = Path(datapath, n_stories, condition, "scores_mean.npy")
-    return np.load(fn)
-
-
-n_stories = [1, 12, 20]
+    fn2 = Path(datapath, n_stories, condition, "scores_sem.npy")
+    return np.load(fn), np.load(fn2)
 
 
 # load the data
-def load_data_wrapper(ds: str, n_stories, which: str):
-    datadir = Path(ds, which, "UTS02")
-    rho_orig = {}
+def load_data_wrapper(
+    data_folder: str,
+    subject: str = "UTS02",
+    n_stories: list[int] = [1],
+    which: str = "envelope",
+):
+    # TEMP FIX, make folders consistent
+    datadir = Path(data_folder, subject, which)
+
+    rho_means = {}
+    rho_sem = {}
     for n in n_stories:
-        rho_orig[str(n)] = load_data(
+        mean_data, sem_data = load_data(
             datapath=datadir, n_stories=str(n), condition="not_shuffled"
         )
-        # rho_shuf[str(n)] = load_data(
-        #    datapath=datadir, n_stories=str(n), condition="shuffled"
-        # )
 
-    return rho_orig
+        rho_means[str(n)] = mean_data
+        rho_sem[str(n)] = sem_data
+
+    return rho_means, rho_sem
 
 
-def make_brain_plots(scores_dict):
+def make_performance_plots(scores_dict: Dict) -> plt.Figure:
     fig, ax = plt.subplots(1, 3, figsize=(12, 4), layout="constrained")
 
     for i, items in enumerate(scores_dict.items()):
@@ -157,46 +121,112 @@ def make_brain_plots(scores_dict):
     return fig
 
 
-def make_figure(run_dir, which):
-    rho_orig = load_data_wrapper(ds=run_dir, which=which, n_stories=[1, 12, 20])
+def make_brain_fig(data_folder, which):
+    rho_means, _ = load_data_wrapper(
+        data_folder=data_folder, which=which, n_stories=[1, 11, 20]
+    )
 
-    fig = make_brain_plots(scores_dict=rho_orig)
+    fig = make_performance_plots(scores_dict=rho_means)
 
     return fig
 
 
-def plot_training_curve(run_dir):
+def make_training_curve_fig(repli_folder: str, repro_folder: str) -> plt.Figure:
     # load embedding model performance
-    embeds = load_data_wrapper(
-        ds=run_dir, which="embeddings", n_stories=[1, 3, 5, 7, 9, 11, 12, 15, 20]
-    )
+    data_repli = {
+        sub: load_data_wrapper(
+            data_folder=str(repli_folder),
+            subject=sub,
+            which="embeddings",
+            n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
+        )[0]
+        for sub in SUBJECT_IDS
+    }
 
-    # load audio envelope model performance
-    audio = load_data_wrapper(
-        ds=run_dir, which="envelope", n_stories=[1, 3, 5, 7, 9, 11, 12, 15, 20]
-    )
+    data_repro = {
+        sub: load_data_wrapper(
+            data_folder=str(repro_folder),
+            subject=sub,
+            which="embeddings",
+            n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
+        )[0]
+        for sub in SUBJECT_IDS
+    }
+
+    # data_repli_sem = {sub:
+    #    load_data_wrapper(
+    #        ds=str(REPLI_FOLDER),
+    #        subject=sub,
+    #        which="embeddings",
+    #        n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
+    #    )[1]
+    #    for sub in SUBJECT_IDS
+    # }
+
+    # data_repro_sem = {sub:
+    #    load_data_wrapper(
+    #        ds=str(REPRO_FOLDER),
+    #        subject=sub,
+    #        which="embeddings",
+    #        n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
+    #    )[1]
+    #    for sub in SUBJECT_IDS
+    # }
+
+    def _data2array_agg(data_dict: Dict, aggfunc) -> np.ndarray:
+        out = np.array(
+            [
+                [aggfunc(data) for data in subject_data.values()]
+                for subject_data in data_dict.values()
+            ]
+        )
+
+        return out
 
     # load the performance scores and average across cortex shape = (n_stories,)
-    y_embeds = np.array([np.nanmean(data) for data in embeds.values()])
-    y_audio = np.array([np.nanmean(data) for data in audio.values()])
+    y_repli = _data2array_agg(data_dict=data_repli, aggfunc=np.mean)
+    y_repro = _data2array_agg(data_dict=data_repro, aggfunc=np.mean)
+
+    # y_repli_sem = _data2array_agg(data_dict=data_repli_sem, aggfunc=sem)
+    # y_repro_sem = _data2array_agg(data_dict=data_repro_sem, aggfunc=sem)
 
     # figure
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(ncols=2, figsize=(9, 4), sharey=True)
 
     # ["1", "3", "5", ...]
-    x = embeds.keys()
+    x = list(data_repli["UTS01"].keys())
 
-    ax.plot(x, y_embeds, "-o", label="Word embeddings")
-    ax.plot(x, y_audio, "-o", label="Audio envelope")
+    ax[0].plot(x, y_repli.T, "-o", label=SUBJECT_IDS)
+    ax[1].plot(x, y_repro.T, "-o")
 
-    ax.legend(title="Predictor")
-    ax.set_title("Model performance with increasing training set size (UTS02)")
+    # plot standard erros
+    # for i in range(y_repli_sem.shape[0]):
+    #    ax[0].fill_between(
+    #        x,
+    #        y1=y_repli[i] - y_repli_sem[i],
+    #        y2=y_repli[i] + y_repli_sem[i],
+    #        alpha=0.3
+    #    )
+    #    ax[1].fill_between(
+    #        x,
+    #        y1=y_repro[i] - y_repro_sem[i],
+    #        y2=y_repro[i] + y_repro_sem[i],
+    #        alpha=0.3
+    #    )
 
-    ax.set_xlabel("N Stories")
-    ax.set_ylabel("Mean test-set performance\n(average across all voxels)")
-    ax.grid(visible=True, lw=0.5, alpha=0.3)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    ax[0].legend(title="Participant")
+    ax[0].set_title("Replication experiment")
+    ax[1].set_title("Reproducibility experiment")
+
+    ax[0].set_ylabel("Mean test-set performance\n(average across all voxels)")
+
+    for a in ax:
+        a.grid(visible=True, lw=0.5, alpha=0.3)
+        a.spines["top"].set_visible(False)
+        a.spines["right"].set_visible(False)
+
+    fig.supxlabel("Training dataset size (Nr. stories)")
+    plt.suptitle("Model performance with increasing training set size")
 
     plt.tight_layout()
 
@@ -209,23 +239,31 @@ if __name__ == "__main__":
         description="Plot the replication figures and save as .pdf and .png",
     )
 
-    parser.add_argument("run_dir", help="folder with results for the run to be ploted")
+    parser.add_argument(
+        "exp1_folder",
+        help="folder with results for the replication experiment to be ploted",
+    )
+    parser.add_argument(
+        "exp2_folder",
+        help="folder with result for the reproducibility experiment to be ploted",
+    )
     parser.add_argument("save_path", help="path to where the figures are saved")
 
     args = parser.parse_args()
 
     cfg = load_config()
 
-    SAVEPATH = Path(args.save_path)
+    savepath = Path(args.save_path)
 
-    # embedding performance
-    fig1 = make_figure(run_dir=args.run_dir, which="embeddings")
+    # replication figure
+    fig1 = make_brain_fig(data_folder=args.exp1_folder, which="embeddings")
     fig1.suptitle(
-        "Embedding encoding model performance with increasing training data",
+        "Replication: "
+        + "Semantic encoding model performance with increasing training data",
         fontsize=14,
     )
 
-    fn1 = str(SAVEPATH / "embeddings_performance.pdf")
+    fn1 = str(savepath / "repli_semantic_performance.pdf")
     log.info(f"Saving {fn1}")
     fig1.savefig(fn1, bbox_inches="tight", transparent=True)
 
@@ -233,13 +271,15 @@ if __name__ == "__main__":
     log.info(f"Saving {fn1_png}")
     fig1.savefig(fn1_png, bbox_inches="tight", dpi=300)
 
-    # audio envelope model performance
-    fig2 = make_figure(run_dir=args.run_dir, which="envelope")
+    # REPRODUCIBILITY EXPERIMENT FIGURE
+    fig2 = make_brain_fig(data_folder=args.exp2_folder, which="embeddings")
     fig2.suptitle(
-        "Envelope encoding model performance with increasing training data", fontsize=14
+        "Reproducibility: "
+        + "Semantic encoding model performance with increasing training data",
+        fontsize=14,
     )
 
-    fn2 = str(SAVEPATH / "envelope_performance.pdf")
+    fn2 = str(savepath / "repro_semantic_performance.pdf")
     log.info(f"Saving {fn2}")
     fig2.savefig(fn2, bbox_inches="tight", transparent=True)
 
@@ -247,10 +287,29 @@ if __name__ == "__main__":
     log.info(f"Saving {fn2_png}")
     fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
 
-    # training curve figure
-    fig3 = plot_training_curve(run_dir=args.run_dir)
+    # REPRODUCIBILITY EXTENSION FIGURE
+    fig2 = make_brain_fig(data_folder=args.exp2_folder, which="envelope")
+    fig2.suptitle(
+        "Extension: "
+        + "Sensory encoding model performance with increasing training data",
+        fontsize=14,
+    )
 
-    fn3 = str(SAVEPATH / "training_curve.pdf")
+    fn2 = str(savepath / "extension_sensory_performance.pdf")
+    log.info(f"Saving {fn2}")
+    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+
+    fn2_png = fn2.replace(".pdf", ".png")
+    log.info(f"Saving {fn2_png}")
+    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
+
+    # TRAINING CURVE FIGURE
+    fig3 = make_training_curve_fig(
+        repli_folder=args.exp1_folder,
+        repro_folder=args.exp2_folder,
+    )
+
+    fn3 = str(savepath / "training_curve.pdf")
     log.info(f"Saving {fn3}")
     fig3.savefig(fn3, bbox_inches="tight", transparent=True)
 
