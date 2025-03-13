@@ -33,7 +33,6 @@ svgoverlay.INKSCAPE_VERSION = str(load_config()["INKSCAPE_VERSION"])
 def plot_voxel_performance(
     subject: str,
     scores: np.ndarray,
-    show_plot: bool = False,
     ax=None,
     vmin: Optional[float] = 0.0,
     vmax: Optional[float] = 0.5,
@@ -105,7 +104,7 @@ def load_data_wrapper(
     return rho_means, rho_sem
 
 
-def make_performance_plots(scores_dict: dict) -> plt.Figure:
+def make_performance_plots(scores_dict: Dict) -> plt.Figure:
     fig, ax = plt.subplots(1, 3, figsize=(12, 4), layout="constrained")
 
     for i, items in enumerate(scores_dict.items()):
@@ -174,7 +173,7 @@ def make_training_curve_fig(repli_folder: str, repro_folder: str) -> plt.Figure:
     #    for sub in SUBJECT_IDS
     # }
 
-    def _data2array_agg(data_dict: dict, aggfunc) -> np.ndarray:
+    def _data2array_agg(data_dict: Dict, aggfunc) -> np.ndarray:
         out = np.array(
             [
                 [aggfunc(data) for data in subject_data.values()]
