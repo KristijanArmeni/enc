@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import cortex
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
@@ -104,7 +105,7 @@ def load_data_wrapper(
     return rho_means, rho_sem
 
 
-def make_performance_plots(scores_dict: Dict) -> plt.Figure:
+def make_performance_plots(scores_dict: Dict) -> matplotlib.figure.Figure:
     fig, ax = plt.subplots(1, 3, figsize=(12, 4), layout="constrained")
 
     for i, items in enumerate(scores_dict.items()):
@@ -131,7 +132,9 @@ def make_brain_fig(data_folder, which):
     return fig
 
 
-def make_training_curve_fig(repli_folder: str, repro_folder: str) -> plt.Figure:
+def make_training_curve_fig(
+    repli_folder: str, repro_folder: str
+) -> matplotlib.figure.Figure:
     # load embedding model performance
     data_repli = {
         sub: load_data_wrapper(

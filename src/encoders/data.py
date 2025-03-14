@@ -211,8 +211,8 @@ def parse_textgrid(text_grid_lines: list) -> dict:
     # put everything into a dataframe
     out: dict[str, Optional[pd.DataFrame]] = {n: None for n in ["phone", "word"]}
 
-    out["phone"] = pd.DataFrame(phone_dict, columns=phone_dict.keys())
-    out["word"] = pd.DataFrame(word_dict, columns=word_dict.keys())
+    out["phone"] = pd.DataFrame(phone_dict, columns=list(phone_dict.keys()))
+    out["word"] = pd.DataFrame(word_dict, columns=list(word_dict.keys()))
 
     return out
 
