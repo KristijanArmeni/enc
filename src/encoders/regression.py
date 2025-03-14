@@ -202,9 +202,9 @@ def ridge_regression_huth(
     y_data_dict: dict[str, np.ndarray],
     score_fct: Callable[[np.ndarray, np.ndarray], np.ndarray],
     alphas: Optional[np.ndarray] = np.logspace(1, 3, 10),
-    nboots: int = 20,
-    chunklen: int = 10,
-    nchunks: int = 10,
+    nboots: int = 50,
+    chunklen: int = 40,
+    nchunks: int = 125,
     singcutoff: float = 1e-10,
     single_alpha: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, Union[float, np.ndarray]]:
