@@ -84,7 +84,9 @@ def pearsonr(x1: np.ndarray, x2: np.ndarray) -> Union[float, np.ndarray]:
     return np.mean(zs(x1) * zs(x2), axis=0)
 
 
-def pearsonr_scorer(estimator, X: np.ndarray, y: np.ndarray) -> float:
+def pearsonr_scorer(
+    estimator, X: np.ndarray, y: np.ndarray
+) -> Union[float, np.ndarray]:
     """Scorer function for RidgeCV that computes the Pearson correlation between the
     predicted and true values.
 
@@ -266,8 +268,8 @@ def ridge_regression_huth(
         nboots,
         chunklen,
         nchunks,
-        singcutoff,
-        single_alpha,
+        singcutoff=singcutoff,
+        single_alpha=single_alpha,
     )
     scores = score_fct(np.dot(X_test, wt), y_test)
 
@@ -286,13 +288,13 @@ def crossval_loocv(
     alphas: Optional[np.ndarray] = None,
     use_cache: bool = True,
     shuffle: bool = False,
-) -> tuple[
-    np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
-]:
+) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     # 1. choose stories
     # the order of stories is determined in config.yaml or via the argument.
     if stories is None:
         stories = STORIES.copy()
+        if not isinstance(stories, list):
+            raise ValueError(f"Config parameter invalid: STORIES: {stories}")
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
@@ -348,7 +350,7 @@ def crossval_loocv(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    return scores_list, weights_list, best_alphas_list
+    return np.array(scores_list), weights_list, best_alphas_list
 
 
 def crossval_simple(
@@ -366,9 +368,7 @@ def crossval_simple(
     shuffle: bool = False,
     seed: Optional[int] = 123,
     keep_train_stories_in_mem: bool = True,
-) -> tuple[
-    np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
-]:
+) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
     """Run regression for n_repeats and return results.
 
     Parameters
@@ -435,6 +435,8 @@ def crossval_simple(
 
     if stories is None:
         stories = STORIES.copy()
+        if not isinstance(stories, list):
+            raise ValueError(f"Config parameter invalid: STORIES: {stories}")
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
@@ -526,7 +528,7 @@ def crossval_simple(
         weights_list.append(weights)
         best_alphas_list.append(best_alphas)
 
-    return scores_list, weights_list, best_alphas_list
+    return np.array(scores_list), weights_list, best_alphas_list
 
 
 def do_regression(
@@ -546,7 +548,8 @@ def do_regression(
     seed: Optional[int] = 123,
     keep_train_stories_in_mem: bool = True,
 ) -> tuple[
-    np.ndarray, list[np.ndarray], list[np.ndarray], list[Union[float, np.ndarray]]
+    tuple[np.ndarray, list[np.ndarray]],
+    tuple[np.ndarray, list[np.ndarray], list[np.ndarray]],
 ]:
     """Runs regression.
 
@@ -622,6 +625,8 @@ def do_regression(
 
     if stories is None:
         stories = STORIES.copy()
+        if not isinstance(stories, list):
+            raise ValueError(f"Config parameter invalid: STORIES: {stories}")
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
@@ -747,7 +752,7 @@ def ridge_corr(
         U, S, Vh = np.linalg.svd(Rstim, full_matrices=False)
     except np.linalg.LinAlgError:
         logger.info("NORMAL SVD FAILED, trying more robust dgesvd..")
-        from text.regression.svd_dgesvd import svd_dgesvd
+        from text.regression.svd_dgesvd import svd_dgesvd  # type: ignore
 
         U, S, Vh = svd_dgesvd(Rstim, full_matrices=False)
 
@@ -993,7 +998,7 @@ def bootstrap_ridge(
         U, S, Vh = np.linalg.svd(Rstim, full_matrices=False)
     except np.linalg.LinAlgError:
         logger.info("NORMAL SVD FAILED, trying more robust dgesvd..")
-        from text.regression.svd_dgesvd import svd_dgesvd
+        from text.regression.svd_dgesvd import svd_dgesvd  # type: ignore
 
         U, S, Vh = svd_dgesvd(Rstim, full_matrices=False)
 
