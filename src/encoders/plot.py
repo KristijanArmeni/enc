@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import cortex
+import matplotlib as mpl
 import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,7 +14,26 @@ from encoders.utils import get_logger, load_config
 
 log = get_logger(__name__)
 
+# matpltotlib params
+mpl.rcParams["xtick.labelsize"] = 14
+mpl.rcParams["ytick.labelsize"] = 14
+mpl.rcParams["axes.labelsize"] = 14
+mpl.rcParams["figure.labelsize"] = 14
+
 SUBJECT_IDS = ["UTS01", "UTS02", "UTS03"]
+# this 8-color is also available in seaborn:
+# https://seaborn.pydata.org/generated/seaborn.husl_palette.html
+# but defined here manually to avoid needing seaborn as dependency
+HUSL_PALETTE = [
+    "#f77189",
+    "#ce9032",
+    "#97a431",
+    "#32b166",
+    "#36ada4",
+    "#39a7d0",
+    "#a48cf4",
+    "#f561dd",
+]
 
 # make sure inkscape is installed
 INKSCAPE_PATH = load_config().get("INKSCAPE_PATH")
@@ -196,10 +216,18 @@ def make_training_curve_fig(
     # figure
     fig, ax = plt.subplots(ncols=2, figsize=(9, 4), sharey=True)
 
-    # ["1", "3", "5", ...]
-    x = list(data_repli["UTS01"].keys())
+    for a in ax:
+        a.set_prop_cycle(color=HUSL_PALETTE)
 
-    ax[0].plot(x, y_repli.T, "-o", label=SUBJECT_IDS)
+    # ["1", "3", "5", ...]
+    x = [int(e) for e in list(data_repli["UTS01"].keys())] + [25]
+
+    print(y_repli.shape)
+    extras = np.array([[np.nan, np.nan, np.nan]]).T
+    y_repli = np.hstack([y_repli, extras])
+    y_repro = np.hstack([y_repro, extras])
+
+    ax[0].plot(x, y_repli.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS])
     ax[1].plot(x, y_repro.T, "-o")
 
     # plot standard erros
@@ -218,18 +246,20 @@ def make_training_curve_fig(
     #    )
 
     ax[0].legend(title="Participant")
-    ax[0].set_title("Replication experiment")
-    ax[1].set_title("Reproducibility experiment")
+    ax[0].set_title("Reproducibility experiment\n(`different-team-same-artifacts`)")
+    ax[1].set_title("Replication experiment\n(`different-team-different-artifacts`)")
+    ax[0].set_ylabel("Mean Correlation (r)")
 
-    ax[0].set_ylabel("Mean test-set performance\n(average across all voxels)")
-
+    minor_ticks = np.arange(x[-1])
     for a in ax:
-        a.grid(visible=True, lw=0.5, alpha=0.3)
+        a.set_xticks(minor_ticks, minor=True)
+        a.set_xticks([5, 10, 15, 20, 25], labels=[5, 10, 15, 20, 25])
+        a.grid(which="major", visible=True, lw=0.5, alpha=0.7)
+        a.grid(which="minor", visible=True, ls="--", lw=0.5, alpha=0.5)
         a.spines["top"].set_visible(False)
         a.spines["right"].set_visible(False)
 
-    fig.supxlabel("Training dataset size (Nr. stories)")
-    plt.suptitle("Model performance with increasing training set size")
+    fig.supxlabel("Number of Training Stories")
 
     plt.tight_layout()
 
