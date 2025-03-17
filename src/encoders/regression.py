@@ -666,7 +666,9 @@ def do_regression(
 
     # aggregate scores
     mean_scores = np.mean(all_scores, axis=0)
-    sem_scores = sem(all_scores, axis=0)
+    sem_scores = sem(
+        [np.mean(repeat_scores, axis=0) for repeat_scores in all_scores], axis=0
+    )
 
     log.info(f"Mean correlation (averages across splits) (r): {mean_scores.mean()}")
     log.info(f"Max  correlation (averaged across splits) (r): {mean_scores.max()}")
