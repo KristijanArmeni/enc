@@ -3,7 +3,7 @@ import os
 import random
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, cast
 
 import cortex
 import numpy as np
@@ -462,15 +462,17 @@ def crossval_simple(
 
         # 1. choose stories to sample for this repeat
         if test_story is None:
-            curr_all_stories: list[str] = rng.choice(
-                stories, size=n_train_stories + 1, replace=False
-            ).tolist()
+            curr_all_stories = cast(
+                list[str],
+                rng.choice(stories, size=n_train_stories + 1, replace=False).tolist(),
+            )
             curr_train_stories = curr_all_stories[:-1]
             curr_test_stories = curr_all_stories[-1:]
         else:
-            curr_train_stories = rng.choice(
-                stories, size=n_train_stories, replace=False
-            ).tolist()
+            curr_train_stories = cast(
+                list[str],
+                rng.choice(stories, size=n_train_stories, replace=False).tolist(),
+            )
             curr_test_stories = [test_story]
             curr_all_stories = [*curr_train_stories, *curr_test_stories]
 
