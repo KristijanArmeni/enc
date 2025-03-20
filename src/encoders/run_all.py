@@ -253,7 +253,11 @@ def run_all(
 
         shuffle_str = "shuffled" if shuffle else "not_shuffled"
 
-        stories = load_config()["STORIES"].copy()
+        # pick the right pool of stories, depending on ridge implementation
+        if ridge_implementation == "regression_huth":
+            stories = load_config()["STORIES"].copy()
+        else:
+            stories = load_config()["STORIES_2"].copy()
 
         for current_n_train_stories in n_train_stories_list:
             output_dir = os.path.join(

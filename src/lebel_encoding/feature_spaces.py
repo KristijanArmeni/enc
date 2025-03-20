@@ -146,7 +146,7 @@ def get_phonemerate_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    with open(join("data", "lebel_data", "articulationdict.json"), "r") as f:
+    with open(join(DATA_DIR, "lebel_data", "articulationdict.json"), "r") as f:
         artdict = json.load(f)
     phonseqs = get_story_phonseqs(allstories)  # (phonemes, phoneme_times, tr_times)
     downsampled_arthistseqs = {}
@@ -201,7 +201,7 @@ def get_eng1000_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    eng1000 = SemanticModel.load(join("data", "lebel_data", "english1000sm.hf5"))
+    eng1000 = SemanticModel.load(join(DATA_DIR, "lebel_data", "english1000sm.hf5"))
     wordseqs = get_story_wordseqs(allstories)
     vectors = {}
     for story in allstories:

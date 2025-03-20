@@ -19,7 +19,7 @@ cfg = load_config()
 DATADIR = Path(cfg["DATA_DIR"])
 STORIES = cfg["STORIES"]
 WAV_DIR = "stimuli"
-EMBEDDINGS_FILE = Path("data", "lebel_data", "english1000sm.hf5")
+EMBEDDINGS_FILE = Path(DATADIR, "lebel_data", "english1000sm.hf5")
 
 TEXT_GRID_FORMATS = [
     'File type = "ooTextFile"',
