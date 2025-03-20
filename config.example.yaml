@@ -2,4 +2,35 @@ CACHE_DIR: .cache
 DATA_DIR: ds003020
 RUNS_DIR: runs
 INKSCAPE_DIR: /path/to/inkscape
-STORIES: [souls, alternateithicatom, avatar, legacy, odetostepfather]
+TR_LEN: 2.0
+STORIES:
+  [
+    alternateithicatom,
+    souls,
+    avatar,
+    legacy,
+    odetostepfather,
+    undertheinfluence,
+    howtodraw,
+    myfirstdaywiththeyankees,
+    naked,
+    life,
+    stagefright,
+    tildeath,
+    fromboyhoodtofatherhood,
+    sloth,
+    exorcism,
+    haveyoumethimyet,
+    adollshouse,
+    inamoment,
+    theclosetthatateeverything,
+    adventuresinsayingyes,
+    buck,
+    swimmingwithastronauts,
+    thatthingonmyarm,
+    eyespy,
+    itsabox,
+    hangtime,
+    wheretheressmoke,
+  ]
+TEST_STORIES: [wheretheressmoke]
