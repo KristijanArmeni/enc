@@ -4,7 +4,7 @@ module for loading fMRI data and features and the like
 
 import re
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 import h5py
 import numpy as np
@@ -19,7 +19,7 @@ cfg = load_config()
 DATADIR = Path(cfg["DATA_DIR"])
 STORIES = cfg["STORIES"]
 WAV_DIR = "stimuli"
-EMBEDDINGS_FILE = Path(DATADIR, "derivative", "english1000sm.hf5")
+EMBEDDINGS_FILE = Path("data", "lebel_data", "english1000sm.hf5")
 
 TEXT_GRID_FORMATS = [
     'File type = "ooTextFile"',
@@ -135,7 +135,9 @@ def parse_textgrid(text_grid_lines: list) -> dict:
             phone_tier = np.array(lines[phone_start:phone_stop])
             word_tier = np.array(lines[word_start:word_stop])
         else:
-            interval_tiers = np.where(np.array(lines) == '"IntervalTier"')[0].tolist()
+            interval_tiers = cast(
+                list[int], np.where(np.array(lines) == '"IntervalTier"')[0].tolist()
+            )
             tier_names[lines[interval_tiers[0] + 1].replace('"', "")] = interval_tiers[
                 0
             ]

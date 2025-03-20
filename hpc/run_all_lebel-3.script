@@ -20,8 +20,8 @@ source_dir="/data/choney1/karmeni1/enc/src"
 # this will run 'huth_regression'
 python  $source_dir/encoders/run_all.py \
 --subject "UTS02" \
---predictor "all" \
---n_delays 5 \
+--feature "all" \
+--ndelays 5 \
 --interpolation "lanczos" \
 --n_train_stories 15 \
 --strategy "simple" \

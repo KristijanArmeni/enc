@@ -208,7 +208,7 @@ def make_delayed(signal: np.ndarray, delays: np.ndarray, circpad=False) -> np.nd
     Returns
     --------
     np.ndarray
-        2-D array of shape (n_samples, n_features * n_delays)
+        2-D array of shape (n_samples, n_features * ndelays)
     """
 
     delayed_signals = []
@@ -329,11 +329,11 @@ def downsample_embeddings_lanczos(
 def load_data_dict(
     stories: list[str],
     subject: str,
-    predictor: str,
+    feature: str,
     interpolation: str,
     shuffle: bool,
     tr_len: float,
-    n_delays: int,
+    ndelays: int,
     use_cache: bool,
 ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
     X_data_dict = dict()
@@ -343,7 +343,7 @@ def load_data_dict(
         if shuffle:
             y_data = np.random.permutation(y_data)
 
-        if predictor == "embeddings":
+        if feature == "eng1000":
             if interpolation == "lanczos":
                 data, starts, stops = get_embeddings(story)
                 X_data = downsample_embeddings_lanczos(
@@ -351,15 +351,11 @@ def load_data_dict(
                 )
             elif interpolation == "average":
                 X_data = load_sm1000_data(story, tr_len, y_data)
-            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
+            X_data = make_delayed(X_data, np.arange(1, ndelays + 1), circpad=False)
 
-        elif predictor == "envelope":
+        elif feature == "envelope":
             X_data = load_envelope_data(story, tr_len, y_data, use_cache)
-            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
-
-        elif predictor == "embeddings_huth":
-            X_data = np.load(f"/Volumes/opt/enc/data/embeddings_huth/{story}.npy")
-            X_data = make_delayed(X_data, np.arange(1, n_delays + 1), circpad=False)
+            X_data = make_delayed(X_data, np.arange(1, ndelays + 1), circpad=False)
 
         assert X_data.shape[0] == y_data.shape[0], (
             f"X.shape={X_data.shape} and y.shape={y_data.shape} for {story} don't match"

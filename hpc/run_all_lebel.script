@@ -19,8 +19,8 @@ source_dir="/data/choney1/karmeni1/enc/src"
 
 python  $source_dir/run_all.py \
 --subject "UTS02" \
---predictor "all" \
---n_delays 5 \
+--feature "all" \
+--ndelays 5 \
 --interpolation "lanczos" \
 --n_train_stories 1 3 5 7 9 12 \
 --strategy "simple" \

@@ -5,7 +5,7 @@ from os.path import dirname, join
 
 import numpy as np
 
-from lebel_encoding.config import DATA_DIR, EM_DATA_DIR, REPO_DIR
+from lebel_encoding.config import DATA_DIR
 from lebel_encoding.ridge_utils.dsutils import (
     make_phoneme_ds,
     make_semantic_model,
@@ -71,7 +71,7 @@ def ph_to_articulate(ds, ph_2_art):
     for ph in ds:
         try:
             articulate_ds.append(ph_2_art[ph])
-        except:
+        except:  # noqa: E722
             articulate_ds.append([""])
     return articulate_ds
 
@@ -118,7 +118,7 @@ def get_articulation_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    with open(join(EM_DATA_DIR, "articulationdict.json"), "r") as f:
+    with open(join("data", "lebel_data", "articulationdict.json"), "r") as f:
         artdict = json.load(f)
     phonseqs = get_story_phonseqs(allstories)  # (phonemes, phoneme_times, tr_times)
     downsampled_arthistseqs = {}
@@ -146,7 +146,7 @@ def get_phonemerate_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    with open(join(EM_DATA_DIR, "articulationdict.json"), "r") as f:
+    with open(join("data", "lebel_data", "articulationdict.json"), "r") as f:
         artdict = json.load(f)
     phonseqs = get_story_phonseqs(allstories)  # (phonemes, phoneme_times, tr_times)
     downsampled_arthistseqs = {}
@@ -178,7 +178,7 @@ def get_wordrate_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    eng1000 = SemanticModel.load(join(EM_DATA_DIR, "english1000sm.hf5"))
+
     wordseqs = get_story_wordseqs(allstories)
     vectors = {}
     for story in allstories:
@@ -201,7 +201,7 @@ def get_eng1000_vectors(allstories):
     Returns:
             Dictionary of {story: downsampled vectors}
     """
-    eng1000 = SemanticModel.load(join(EM_DATA_DIR, "english1000sm.hf5"))
+    eng1000 = SemanticModel.load(join("data", "lebel_data", "english1000sm.hf5"))
     wordseqs = get_story_wordseqs(allstories)
     vectors = {}
     for story in allstories:
