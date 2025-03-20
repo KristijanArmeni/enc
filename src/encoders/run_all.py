@@ -139,10 +139,10 @@ def run_all(
         shuffle_opts = [False, True]
 
     # if run folder name not given, create one
-    if not args.run_folder_name:
+    if not run_folder_name:
         run_folder_name = create_run_folder_name()
     else:
-        run_folder_name = args.run_folder_name
+        run_folder_name = run_folder_name
 
     run_folder = os.path.join(RUNS_DIR, run_folder_name)
     Path(run_folder).mkdir(parents=True, exist_ok=True)
