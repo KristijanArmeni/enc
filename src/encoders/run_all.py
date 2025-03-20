@@ -177,7 +177,7 @@ def run_all(
     # pick the right pool of stories, depending on ridge implementation
     if ridge_implementation == "regression_huth":
         stories = load_config()["STORIES"].copy()
-    else:
+    elif ridge_implementation == "ridgeCV":
         stories = load_config()["STORIES_2"].copy()
 
     if not isinstance(stories, list):
@@ -256,6 +256,11 @@ def run_all(
         current_feature, current_subject, shuffle = combination_tuple
 
         shuffle_str = "shuffled" if shuffle else "not_shuffled"
+
+        # just for UTS03, nans are not an issue
+        if (current_subject == "UTS03") & (ridge_implementation == "ridgeCV"):
+            stories = load_config()["STORIES"].copy()
+            # config is wrong for UTS03
 
         for current_n_train_stories in n_train_stories_list:
             output_dir = os.path.join(
