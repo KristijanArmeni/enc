@@ -33,4 +33,3 @@ STORIES:
     hangtime,
     wheretheressmoke,
   ]
-TEST_STORIES: [wheretheressmoke]
