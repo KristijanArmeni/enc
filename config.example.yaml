@@ -33,3 +33,38 @@ STORIES:
     hangtime,
     wheretheressmoke,
   ]
+# this set to be used with replication experiment 1
+# the following stories in the original list contain nans:
+# myfirstdaywiththeyankees, naked, life, fromboyhoodtofatherhood
+# added stories (selected randomly):
+# leavingbaghdad, comingofageondeathrow, againstthewind, forgettingfear
+STORIES_2:
+  [
+    alternateithicatom,
+    souls,
+    avatar,
+    legacy,
+    odetostepfather,
+    undertheinfluence,
+    howtodraw,
+    stagefright,
+    tildeath,
+    sloth,
+    exorcism,
+    haveyoumethimyet,
+    adollshouse,
+    inamoment,
+    theclosetthatateeverything,
+    adventuresinsayingyes,
+    buck,
+    swimmingwithastronauts,
+    thatthingonmyarm,
+    eyespy,
+    itsabox,
+    hangtime,
+    wheretheressmoke,
+    leavingbaghdad, # ADDED
+    comingofageondeathrow', # ADDED
+    againstthewind', #ADDED
+    forgettingfear', #ADDED
+  ]

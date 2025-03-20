@@ -22,7 +22,6 @@ log = get_logger(__name__)
 
 cfg = load_config()
 RUNS_DIR = cfg["RUNS_DIR"]
-STORIES = cfg["STORIES"]
 TR_LEN = cfg["TR_LEN"]
 
 
@@ -175,7 +174,12 @@ def run_all(
     else:
         n_train_stories_list = n_train_stories
 
-    stories = STORIES.copy()
+    # pick the right pool of stories, depending on ridge implementation
+    if ridge_implementation == "regression_huth":
+        stories = load_config()["STORIES"].copy()
+    elif ridge_implementation == "ridgeCV":
+        stories = load_config()["STORIES_2"].copy()
+
     if not isinstance(stories, list):
         raise ValueError(f"Config parameter invalid: STORIES: {stories}")
 
@@ -208,7 +212,7 @@ def run_all(
         "feature_arg": feature,
         "features": features,
         "n_train_stories": n_train_stories,
-        "stories": STORIES,
+        "stories": stories,
         "test_story": test_story,
         "n_repeats": n_repeats,
         "ndelays": ndelays,
@@ -253,7 +257,10 @@ def run_all(
 
         shuffle_str = "shuffled" if shuffle else "not_shuffled"
 
-        stories = load_config()["STORIES"].copy()
+        # just for UTS03, nans are not an issue
+        if (current_subject == "UTS03") & (ridge_implementation == "ridgeCV"):
+            stories = load_config()["STORIES"].copy()
+            # config is wrong for UTS03
 
         for current_n_train_stories in n_train_stories_list:
             output_dir = os.path.join(
