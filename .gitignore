@@ -5,3 +5,5 @@ __pycache__
 .vscode
 data
 runs
+node_modules
+.ruff_cache
