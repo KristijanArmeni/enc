@@ -15,9 +15,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from cortex import svgoverlay
+from rich.console import Console
 
 from encoders.utils import check_make_dirs, get_logger, load_config
 
+console = Console()
 log = get_logger(__name__)
 
 # matpltotlib params
@@ -207,22 +209,38 @@ def load_data_wrapper(
     rho_sem = defaultdict(
         partial(defaultdict, partial(defaultdict, partial(defaultdict, dict)))
     )
+    found_data = False
     for (
         subject,
         feature,
         curr_n_train_stories,
         shuffle,
     ) in combinations:
-        mean_data, sem_data = load_data(
-            run_folder_name=run_folder_name,
-            subject=subject,
-            feature=feature,
-            curr_n_train_stories=curr_n_train_stories,
-            shuffle=shuffle,
-        )
+        try:
+            mean_data, sem_data = load_data(
+                run_folder_name=run_folder_name,
+                subject=subject,
+                feature=feature,
+                curr_n_train_stories=curr_n_train_stories,
+                shuffle=shuffle,
+            )
+            rho_means[subject][feature][curr_n_train_stories][shuffle] = mean_data
+            rho_sem[subject][feature][curr_n_train_stories][shuffle] = sem_data
+            found_data = True
+        except FileNotFoundError:
+            data_path = str(
+                Path(
+                    run_folder_name,
+                    subject,
+                    feature,
+                    str(curr_n_train_stories),
+                    shuffle,
+                )
+            )
+            log.info(f"Missing data for: {data_path}")
 
-        rho_means[subject][feature][curr_n_train_stories][shuffle] = mean_data
-        rho_sem[subject][feature][curr_n_train_stories][shuffle] = sem_data
+    if not found_data:
+        raise ValueError(f"No data found for your parameters in {run_folder_name}")
 
     return rho_means, rho_sem
 
@@ -254,30 +272,45 @@ def load_data_wrapper_df(
         curr_n_train_stories,
         shuffle,
     ) in combinations:
-        mean_data, sem_data = load_data(
-            run_folder_name=run_folder_name,
-            subject=subject,
-            feature=feature,
-            curr_n_train_stories=curr_n_train_stories,
-            shuffle=shuffle,
-        )
+        try:
+            mean_data, sem_data = load_data(
+                run_folder_name=run_folder_name,
+                subject=subject,
+                feature=feature,
+                curr_n_train_stories=curr_n_train_stories,
+                shuffle=shuffle,
+            )
 
-        rho_means_df_ls.append(
-            pd.DataFrame(
-                data=[mean_data],
-                index=pd.MultiIndex.from_tuples(
-                    [(subject, feature, curr_n_train_stories, shuffle)]
-                ),
+            rho_means_df_ls.append(
+                pd.DataFrame(
+                    data=[mean_data],
+                    index=pd.MultiIndex.from_tuples(
+                        [(subject, feature, curr_n_train_stories, shuffle)]
+                    ),
+                )
             )
-        )
-        rho_sems_df_ls.append(
-            pd.DataFrame(
-                data=[sem_data],
-                index=pd.MultiIndex.from_tuples(
-                    [(subject, feature, curr_n_train_stories, shuffle)]
-                ),
+            rho_sems_df_ls.append(
+                pd.DataFrame(
+                    data=[sem_data],
+                    index=pd.MultiIndex.from_tuples(
+                        [(subject, feature, curr_n_train_stories, shuffle)]
+                    ),
+                )
             )
-        )
+        except FileNotFoundError:
+            data_path = str(
+                Path(
+                    run_folder_name,
+                    subject,
+                    feature,
+                    str(curr_n_train_stories),
+                    shuffle,
+                )
+            )
+            log.info(f"Missing data for: {data_path}")
+
+    if len(rho_means_df_ls) == 0:
+        raise ValueError(f"No data found for your parameters in {run_folder_name}")
 
     rho_voxel_means_df = pd.concat(rho_means_df_ls)
     rho_sems_df = pd.concat(rho_sems_df_ls)
@@ -405,9 +438,25 @@ def make_training_curve_fig(
     return ax
 
 
+def save_fig_png_pdf(
+    fig: matplotlib.figure.Figure,
+    save_path: Union[str, Path],
+    filename: str,
+):
+    """Saves figure to pdf and png"""
+    fn = str(Path(save_path, f"{filename}.pdf"))
+    log.info(f"Saving {fn}")
+    fig.savefig(fn, bbox_inches="tight", transparent=True)
+
+    fn_png = fn.replace(".pdf", ".png")
+    log.info(f"Saving {fn_png}")
+    fig.savefig(fn_png, bbox_inches="tight", dpi=300)
+
+
 def plot_all(
-    replication_folder: Optional[str],
     reproduction_folder: Optional[str],
+    replication_ridgeCV_folder: Optional[str],
+    replication_ridge_huth_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
     main_subject: str = "UTS02",
     n_train_stories_main_subject: list[int] = [1, 2],
@@ -424,8 +473,13 @@ def plot_all(
     save_path = Path(save_path)
     check_make_dirs(save_path, isdir=True)
 
-    # TRAINING CURVE FIGURE REPRODUCTION
+    console.print("\nCorrelation X n_train_stories curve", style="red bold")
+
+    # REPRODUCTION: Training curve
     if reproduction_folder is not None:
+        console.print(
+            "\n > Reproduction: different-team-same-articacts", style="yellow"
+        )
         fig3_reproduction, ax3_reproduction = plt.subplots(figsize=(10, 8))
         make_training_curve_fig(
             run_folder_name=reproduction_folder,
@@ -436,129 +490,221 @@ def plot_all(
             ax=ax3_reproduction,
         )
         plt.tight_layout()
+        save_fig_png_pdf(
+            fig3_reproduction,
+            save_path=save_path,
+            filename="training_curve_reproduction",
+        )
 
-        fn3 = str(save_path / "training_curve_replication.pdf")
-        log.info(f"Saving {fn3}")
-        fig3_reproduction.savefig(fn3, bbox_inches="tight", transparent=True)
-
-        fn3_png = fn3.replace(".pdf", ".png")
-        log.info(f"Saving {fn3_png}")
-        fig3_reproduction.savefig(fn3_png, bbox_inches="tight", dpi=300)
-
-    # TRAINING CURVE FIGURE REPLICATION
-    if replication_folder is not None:
-        fig3_replication, ax3_replication = plt.subplots(figsize=(10, 8))
+    # REPLICATION ridgeCV: Training curve
+    if replication_ridgeCV_folder is not None:
+        console.print(
+            "\n > Replication ridgeCV: different-team-different-articacts",
+            style="yellow",
+        )
+        fig3_replication_ridgeCV, ax3_replication_ridgeCV = plt.subplots(
+            figsize=(10, 8)
+        )
         make_training_curve_fig(
-            run_folder_name=replication_folder,
+            run_folder_name=replication_ridgeCV_folder,
             feature="eng1000",
             subjects=None,
             n_train_stories=None,
             shuffle="not_shuffled",
-            ax=ax3_replication,
+            ax=ax3_replication_ridgeCV,
         )
         plt.tight_layout()
+        save_fig_png_pdf(
+            fig3_replication_ridgeCV,
+            save_path=save_path,
+            filename="training_curve_replication_ridgeCV",
+        )
 
-        fn3 = str(save_path / "training_curve_replication.pdf")
-        log.info(f"Saving {fn3}")
-        fig3_replication.savefig(fn3, bbox_inches="tight", transparent=True)
-
-        fn3_png = fn3.replace(".pdf", ".png")
-        log.info(f"Saving {fn3_png}")
-        fig3_replication.savefig(fn3_png, bbox_inches="tight", dpi=300)
-
-    # REPLICATION FIGURE
-    if (
-        replication_folder is not None
-        and Path(replication_folder, main_subject, "eng1000").exists()
-    ):
-        fig1 = make_brain_fig(
-            run_folder_name=replication_folder,
-            subject=main_subject,
+    # REPLICATION ridge_huth: Training curve
+    if replication_ridge_huth_folder is not None:
+        console.print(
+            "\n > Replication ridge_huth: different-team-quasi_same-articacts",
+            style="yellow",
+        )
+        fig3_replication_ridge_huth, ax3_replication_ridge_huth = plt.subplots(
+            figsize=(10, 8)
+        )
+        make_training_curve_fig(
+            run_folder_name=replication_ridge_huth_folder,
             feature="eng1000",
-            n_train_stories=n_train_stories_main_subject,
+            subjects=None,
+            n_train_stories=None,
             shuffle="not_shuffled",
+            ax=ax3_replication_ridge_huth,
         )
-        fig1.suptitle(
-            "Replication: "
-            + "Semantic encoding model performance with increasing training data",
-            fontsize=14,
+        plt.tight_layout()
+        save_fig_png_pdf(
+            fig3_replication_ridge_huth,
+            save_path=save_path,
+            filename="training_curve_replication_ridge_huth",
         )
-        fn1 = str(save_path / "repli_semantic_performance.pdf")
-        log.info(f"Saving {fn1}")
-        fig1.savefig(fn1, bbox_inches="tight", transparent=True)
 
-        fn1_png = fn1.replace(".pdf", ".png")
-        log.info(f"Saving {fn1_png}")
-        fig1.savefig(fn1_png, bbox_inches="tight", dpi=300)
-
-    # REPRODUCIBILITY EXPERIMENT FIGURE
+    console.print("\nBrain fig", style="red bold")
+    # REPRODUCTION: Brain fig
     if (
         reproduction_folder is not None
         and Path(reproduction_folder, main_subject, "eng1000").exists()
     ):
-        fig2 = make_brain_fig(
+        console.print(
+            "\n > Reproduction: different-team-same-articacts", style="yellow"
+        )
+        fig1_reproduction = make_brain_fig(
             run_folder_name=reproduction_folder,
             subject=main_subject,
             feature="eng1000",
             n_train_stories=n_train_stories_main_subject,
             shuffle="not_shuffled",
         )
-        fig2.suptitle(
-            "Reproducibility: "
+        fig1_reproduction.suptitle(
+            "Reproduction: "
             + "Semantic encoding model performance with increasing training data",
             fontsize=14,
         )
-        fn2 = str(save_path / "repro_semantic_performance.pdf")
-        log.info(f"Saving {fn2}")
-        fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+        save_fig_png_pdf(
+            fig1_reproduction,
+            save_path=save_path,
+            filename="reproduction_semantic_performance",
+        )
 
-        fn2_png = fn2.replace(".pdf", ".png")
-        log.info(f"Saving {fn2_png}")
-        fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
-
-    # REPRODUCIBILITY EXTENSION FIGURE
+    # REPLICATION ridgeCV: brain fig
     if (
-        reproduction_folder is not None
-        and Path(reproduction_folder, main_subject, "envelope").exists()
+        replication_ridgeCV_folder is not None
+        and Path(replication_ridgeCV_folder, main_subject, "eng1000").exists()
     ):
-        fig2 = make_brain_fig(
-            run_folder_name=reproduction_folder,
+        console.print(
+            "\n > Replication ridgeCV: different-team-different-articacts",
+            style="yellow",
+        )
+        fig2_replication_ridgeCV = make_brain_fig(
+            run_folder_name=replication_ridgeCV_folder,
+            subject=main_subject,
+            feature="eng1000",
+            n_train_stories=n_train_stories_main_subject,
+            shuffle="not_shuffled",
+        )
+        fig2_replication_ridgeCV.suptitle(
+            "Replication: "
+            + "Semantic encoding model performance with increasing training data",
+            fontsize=14,
+        )
+        save_fig_png_pdf(
+            fig2_replication_ridgeCV,
+            save_path=save_path,
+            filename="replication_ridgeCV_semantic_performance",
+        )
+
+    # REPLICATION ridge_huth: brain fig
+    if (
+        replication_ridge_huth_folder is not None
+        and Path(replication_ridge_huth_folder, main_subject, "eng1000").exists()
+    ):
+        console.print(
+            "\n > Replication ridge_huth: different-team-quasi_same_articacts",
+            style="yellow",
+        )
+        fig2_replication_ridge_huth = make_brain_fig(
+            run_folder_name=replication_ridge_huth_folder,
+            subject=main_subject,
+            feature="eng1000",
+            n_train_stories=n_train_stories_main_subject,
+            shuffle="not_shuffled",
+        )
+        fig2_replication_ridge_huth.suptitle(
+            "Replication: "
+            + "Semantic encoding model performance with increasing training data",
+            fontsize=14,
+        )
+        save_fig_png_pdf(
+            fig2_replication_ridge_huth,
+            save_path=save_path,
+            filename="replication_ridge_huth_semantic_performance",
+        )
+
+    console.print("\nBrain fig audio envelope", style="red bold")
+    # REPLICATION ridgeCV: brain fig
+    if (
+        replication_ridgeCV_folder is not None
+        and Path(replication_ridgeCV_folder, main_subject, "envelope").exists()
+    ):
+        console.print(
+            "\n > Replication ridgeCV: different-team-different-articacts",
+            style="yellow",
+        )
+        fig2_replication_ridgeCV_envelope = make_brain_fig(
+            run_folder_name=replication_ridgeCV_folder,
             subject=main_subject,
             feature="envelope",
             n_train_stories=n_train_stories_main_subject,
             shuffle="not_shuffled",
         )
-        fig2.suptitle(
+        fig2_replication_ridgeCV_envelope.suptitle(
             "Extension: "
             + "Sensory encoding model performance with increasing training data",
             fontsize=14,
         )
 
-        fn2 = str(save_path / "extension_sensory_performance.pdf")
-        log.info(f"Saving {fn2}")
-        fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+        save_fig_png_pdf(
+            fig2_replication_ridgeCV_envelope,
+            save_path=save_path,
+            filename="extension_ridgeCV_sensory_performance",
+        )
 
-        fn2_png = fn2.replace(".pdf", ".png")
-        log.info(f"Saving {fn2_png}")
-        fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
+    # REPLICATION ridge_huth: brain fig
+    if (
+        replication_ridge_huth_folder is not None
+        and Path(replication_ridge_huth_folder, main_subject, "envelope").exists()
+    ):
+        console.print(
+            "\n > Replication ridge_huth: different-team-quasi_same-articacts",
+            style="yellow",
+        )
+        fig2_replication_ridge_huth_envelope = make_brain_fig(
+            run_folder_name=replication_ridge_huth_folder,
+            subject=main_subject,
+            feature="envelope",
+            n_train_stories=n_train_stories_main_subject,
+            shuffle="not_shuffled",
+        )
+        fig2_replication_ridge_huth_envelope.suptitle(
+            "Extension: "
+            + "Sensory encoding model performance with increasing training data",
+            fontsize=14,
+        )
+
+        save_fig_png_pdf(
+            fig2_replication_ridge_huth_envelope,
+            save_path=save_path,
+            filename="extension_ridgeCV_sensory_performance",
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "plot.py",
-        description="Plot the replication figures and save as .pdf and .png",
-    )
-    parser.add_argument(
-        "--replication",
-        type=str,
-        default=None,
-        help="folder with results for the replication experiment to be ploted",
+        description="Save replication and reproduction figures as .pdf and .png",
     )
     parser.add_argument(
         "--reproduction",
         type=str,
         default=None,
-        help="folder with result for the reproducibility experiment to be ploted",
+        help="folder with results for the reproduction experiment to be plotted",
+    )
+    parser.add_argument(
+        "--replication_ridgeCV",
+        type=str,
+        default=None,
+        help="folder with result for the replication experiment to be ploted",
+    )
+    parser.add_argument(
+        "--replication_ridge_huth",
+        type=str,
+        default=None,
+        help="folder with result for the replication experiment to be ploted",
     )
     parser.add_argument(
         "--save_path",
@@ -572,7 +718,8 @@ if __name__ == "__main__":
     cfg = load_config()
 
     plot_all(
-        replication_folder=args.replication,
         reproduction_folder=args.reproduction,
+        replication_ridgeCV_folder=args.replication_ridgeCV,
+        replication_ridge_huth_folder=args.replication_ridge_huth,
         save_path=args.save_path,
     )
