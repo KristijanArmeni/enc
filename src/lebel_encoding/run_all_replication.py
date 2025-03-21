@@ -117,6 +117,32 @@ def run_all_replication(
     fs = " ".join(_FEATURE_CONFIG.keys())
     assert feature in _FEATURE_CONFIG.keys(), "Available feature spaces:" + fs
 
+    config = {
+        "subject": subject,
+        "feature": feature,
+        "n_train_stories": n_train_stories,
+        "stories": STORIES,
+        "test_story": test_story,
+        "n_repeats": n_repeats,
+        "trim": trim,
+        "ndelays": ndelays,
+        "nboots": nboots,
+        "chunklen": chunklen,
+        "nchunks": nchunks,
+        "singcutoff": singcutoff,
+        "single_alpha": single_alpha,
+        "use_corr": use_corr,
+        "run_folder_name": run_folder_name,
+    }
+
+    run_folder = os.path.join(RUNS_DIR, run_folder_name)
+    Path(run_folder).mkdir(parents=True, exist_ok=True)
+
+    # update results file
+    params_path = os.path.join(run_folder, "params.json")
+    with open(params_path, "w") as f_out:
+        json.dump(config, f_out, indent=4)
+
     test_stories = [test_story]
     train_stories = list(set(STORIES).difference(test_stories))
     allstories = list(set(train_stories) | set(test_stories))
@@ -131,9 +157,6 @@ def run_all_replication(
         run_folder_name = create_run_folder_name()
     else:
         run_folder_name = run_folder_name
-
-    run_folder = os.path.join(RUNS_DIR, run_folder_name)
-    Path(run_folder).mkdir(parents=True, exist_ok=True)
 
     for current_n_train_stories in n_train_stories_list:
         # e.g. /UTS01/embeddings/5/not_shuffled/scores_mean.py
@@ -219,7 +242,9 @@ def run_all_replication(
             best_alphas_list.append(valphas)
 
         mean_scores = np.mean(scores_list, axis=0)
-        sem_scores = sem(scores_list, axis=0)
+        sem_scores = sem(
+            [np.mean(repeat_scores, axis=0) for repeat_scores in scores_list], axis=0
+        )
         np.save(os.path.join(output_dir, "scores_mean.npy"), mean_scores)
         np.save(os.path.join(output_dir, "scores_sem.npy"), sem_scores)
 
