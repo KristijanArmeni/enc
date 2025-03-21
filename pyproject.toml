@@ -30,6 +30,7 @@ mkdocs-material = "^9.5.50"
 markdown = "^3.7"
 pymdown-extensions = "^10.14.1"
 tables = "^3.10.2"
+seaborn = "^0.13.2"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
