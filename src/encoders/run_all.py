@@ -175,7 +175,7 @@ def run_all(
         n_train_stories_list = n_train_stories
 
     # pick the right pool of stories, depending on ridge implementation
-    if ridge_implementation == "regression_huth":
+    if ridge_implementation == "ridge_huth":
         stories = load_config()["STORIES"].copy()
     elif ridge_implementation == "ridgeCV":
         stories = load_config()["STORIES_2"].copy()

@@ -27,7 +27,7 @@ STORIES = cfg["STORIES"]
 
 def run_all_replication(
     subject: str = "UTS02",
-    feature: Union[str, list[str]] = "eng1000",
+    feature: str = "eng1000",
     n_train_stories: Union[int, list[int]] = [1, 3, 5],
     test_story: str = "wheretheressmoke",
     n_repeats: int = 15,
@@ -62,12 +62,11 @@ def run_all_replication(
         Subject identifier.
         Can be one of: {`"all"`, `"UTS01"`, `"UTS02"`, `"UTS03"`, `"UTS04"`,
          `"UTS05"`, `"UTS06"`, `"UTS07"`, `"UTS08"`}
-    feature : {"all", "envelope", "eng1000"}, default="all"
-        Which predictor to run.
-        `all` will run separate encoding models for both predictors (default).
-        `envelope` will run the encoding model with the audio envelope as predictor.
+    feature : {"eng1000", "articulation", "phonemerate", "wordrate"}, default="all"
+        Which feature to run.
         `eng1000` will run the encoding model with the word embeddings of the stories
          as predictor.
+        The other features have not been tested in this codebase (but may work).
     n_train_stories : int or list of int
         Number o of training stories for the encoding model. If a list is given, the
          encoding model will be fitted with each number separately.
@@ -141,7 +140,7 @@ def run_all_replication(
         output_dir = os.path.join(
             run_folder,
             subject,
-            "embeddings",  # only option here
+            feature,
             str(current_n_train_stories),
             "not_shuffled",
         )
