@@ -8,6 +8,8 @@ from typing import Dict, Mapping, Optional, Union
 
 import cortex
 import matplotlib as mpl
+
+mpl.use("Agg")
 import matplotlib.axes
 import matplotlib.figure
 import matplotlib.pyplot as plt
@@ -326,9 +328,13 @@ def load_data_wrapper_df(
 
 
 def make_performance_plots(scores_dict: Dict) -> matplotlib.figure.Figure:
+    n_n_train_stories = len(scores_dict)
+
     fig, ax = plt.subplots(
         1, len(scores_dict), figsize=(len(scores_dict) * 4, 4), layout="constrained"
     )
+    if n_n_train_stories == 1:
+        ax = [ax]
 
     for i, items in enumerate(scores_dict.items()):
         n, data = items
@@ -338,7 +344,11 @@ def make_performance_plots(scores_dict: Dict) -> matplotlib.figure.Figure:
             f"{n} Training story" if int(n) == 1 else f"{n} Training stories"
         )
 
-    cbar = ax[1].images[0].colorbar
+    if n_n_train_stories > 1:
+        cbar = ax[1].images[0].colorbar
+    else:
+        cbar = ax[0].images[0].colorbar
+
     cbar.ax.set_xlabel("Test-set correlation", fontsize=12)
 
     return fig
@@ -363,9 +373,10 @@ def make_brain_fig(
     # get it out of the dictionaries
     scores_dict: dict[str, np.ndarray] = dict()
     for curr_n_train_stories in n_train_stories:
-        scores_dict[str(curr_n_train_stories)] = rho_means[subject][feature][
-            curr_n_train_stories
-        ][shuffle]
+        if shuffle in rho_means[subject][feature][curr_n_train_stories]:
+            scores_dict[str(curr_n_train_stories)] = rho_means[subject][feature][
+                curr_n_train_stories
+            ][shuffle]
 
     fig = make_performance_plots(scores_dict=scores_dict)
 
@@ -451,6 +462,7 @@ def save_fig_png_pdf(
     fn_png = fn.replace(".pdf", ".png")
     log.info(f"Saving {fn_png}")
     fig.savefig(fn_png, bbox_inches="tight", dpi=300)
+    plt.close()
 
 
 def plot_all(
@@ -460,12 +472,10 @@ def plot_all(
     save_path: Optional[Union[str, Path]],
     main_subject: str = "UTS02",
     n_train_stories_main_subject: list[int] = [1, 2],
-    plt_interactive: bool = False,
 ):
     """Plots replication, and reproduction plots."""
 
-    if not plt_interactive:
-        plt.ioff()  # turn interactive mode off
+    plt.ioff()  # turn interactive mode off
 
     if save_path is None:
         save_path = "plots"
