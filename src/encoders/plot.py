@@ -475,7 +475,7 @@ def plot_all(
     replication_ridge_huth_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
     main_subject: str = "UTS02",
-    n_train_stories_main_subject: list[int] = [1, 2],
+    n_train_stories_main_subject: list[int] = [1, 11, 25],
 ):
     """Plots replication, and reproduction plots."""
 
