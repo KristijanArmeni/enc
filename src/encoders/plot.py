@@ -6,11 +6,14 @@ from typing import Dict, Optional
 import cortex
 import matplotlib as mpl
 import matplotlib.figure
+import matplotlib.gridspec as gridspec
+import matplotlib.image as mpimg
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
 
-from encoders.utils import get_logger, load_config
+from encoders.utils import ROOT, get_logger, load_config
 
 log = get_logger(__name__)
 
@@ -152,13 +155,18 @@ def make_brain_fig(data_folder, which):
     return fig
 
 
+runs_dir = load_config()["RUNS_DIR"]
+repro_folder = Path(runs_dir, "2025-03-12_15-25_487099")
+repli_folder = Path(runs_dir, "2025-03-06_17-05_265539")
+
+
 def make_training_curve_fig(
     repli_folder: str, repro_folder: str
 ) -> matplotlib.figure.Figure:
     # load embedding model performance
     data_repli = {
         sub: load_data_wrapper(
-            data_folder=str(repli_folder),
+            data_folder=str(repro_folder),
             subject=sub,
             which="embeddings",
             n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
@@ -168,7 +176,7 @@ def make_training_curve_fig(
 
     data_repro = {
         sub: load_data_wrapper(
-            data_folder=str(repro_folder),
+            data_folder=str(repli_folder),
             subject=sub,
             which="embeddings",
             n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
@@ -210,25 +218,95 @@ def make_training_curve_fig(
     y_repli = _data2array_agg(data_dict=data_repli, aggfunc=np.mean)
     y_repro = _data2array_agg(data_dict=data_repro, aggfunc=np.mean)
 
-    # y_repli_sem = _data2array_agg(data_dict=data_repli_sem, aggfunc=sem)
-    # y_repro_sem = _data2array_agg(data_dict=data_repro_sem, aggfunc=sem)
-
-    # figure
-    fig, ax = plt.subplots(ncols=2, figsize=(9, 4), sharey=True)
-
-    for a in ax:
-        a.set_prop_cycle(color=HUSL_PALETTE)
-
-    # ["1", "3", "5", ...]
-    x = [int(e) for e in list(data_repli["UTS01"].keys())] + [25]
-
-    print(y_repli.shape)
     extras = np.array([[np.nan, np.nan, np.nan]]).T
     y_repli = np.hstack([y_repli, extras])
     y_repro = np.hstack([y_repro, extras])
 
-    ax[0].plot(x, y_repli.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS])
-    ax[1].plot(x, y_repro.T, "-o")
+    # y_repli_sem = _data2array_agg(data_dict=data_repli_sem, aggfunc=sem)
+    # y_repro_sem = _data2array_agg(data_dict=data_repro_sem, aggfunc=sem)
+
+    fig = plt.figure(figsize=(15, 6.5))
+    gs = gridspec.GridSpec(2, 3, width_ratios=[1, 1, 1], height_ratios=[1, 1.2])
+
+    # create axes objects for plotting
+    # Create first subplot (for image) without sharing axes
+    axes = []
+    ax00 = plt.subplot(gs[0, 0])
+    axes.append([ax00])
+
+    # Create subplots with shared axes for the other two in the top row
+    ax01 = plt.subplot(gs[0, 1])
+    ax02 = plt.subplot(gs[0, 2], sharex=ax01, sharey=ax01)
+    axes[0].extend([ax01, ax02])
+
+    # Create bottom row subplots
+    bottom_row = []
+    for j in range(3):
+        ax = plt.subplot(gs[1, j])
+        bottom_row.append(ax)
+    axes.append(bottom_row)
+
+    axes = np.array(axes)
+
+    for ax in axes[0, :]:
+        ax.set_prop_cycle(color=HUSL_PALETTE)
+
+    ORIG_RESULT = Path(ROOT, "src", "encoders", "orig.png")
+    img = mpimg.imread(ORIG_RESULT)
+    axes[0, 0].imshow(img)
+    ORIG_BRAIN = Path(ROOT, "src", "encoders", "brain_orig.png")
+    img2 = mpimg.imread(ORIG_BRAIN)
+    axes[1, 0].imshow(img2)
+
+    height, width = img.shape[:2]
+    aspect_ratio = height / width
+
+    axes[0, 0].set_xticks([])
+    axes[0, 0].set_yticks([])
+    axes[0, 0].set_xlabel("")
+    axes[0, 0].set_ylabel("")
+    axes[0, 0].axis("off")
+    axes[1, 0].axis("off")
+
+    # Force the figure to draw so we can get correct positions
+    fig.canvas.draw()
+
+    # Get the positions of both subplots we want to group
+    pos_00 = axes[0, 0].get_position()
+    pos_10 = axes[1, 0].get_position()
+
+    # Create a rectangle patch that encompasses both subplots
+    padding = 0.03
+    rect = patches.Rectangle(
+        (
+            pos_00.x0 - padding,
+            pos_10.y0 - padding,
+        ),  # Lower left corner (from bottom subplot)
+        pos_00.width + 2 * padding,  # Width (use first subplot's width)
+        (pos_00.y0 + pos_00.height) - pos_10.y0 + 0.04,  # Total height of both subplots
+        linewidth=2,
+        edgecolor="#4682B4",  # Steel blue
+        facecolor="lightblue",
+        alpha=0.2,
+        linestyle="--",
+        zorder=0,
+        transform=fig.transFigure,
+    )
+
+    # Add the rectangle to the figure
+    fig.add_artist(rect)
+
+    # ["1", "3", "5", ...]
+    x = [int(e) for e in list(data_repli["UTS01"].keys())] + [25]
+
+    axes[0, 1].plot(
+        x, y_repli.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS]
+    )
+    axes[0, 2].plot(x, y_repro.T, "-o")
+    axes[0, 2].label_outer()
+
+    for i in range(3):
+        axes[0, i].set_box_aspect(aspect_ratio)
 
     # plot standard erros
     # for i in range(y_repli_sem.shape[0]):
@@ -245,21 +323,54 @@ def make_training_curve_fig(
     #        alpha=0.3
     #    )
 
-    ax[0].legend(title="Participant")
-    ax[0].set_title("Reproducibility experiment\n(`different-team-same-artifacts`)")
-    ax[1].set_title("Replication experiment\n(`different-team-different-artifacts`)")
-    ax[0].set_ylabel("Mean Correlation (r)")
+    # load the fMRI data
+    rho_voxels_repro, _ = load_data_wrapper(
+        data_folder=repro_folder, which="embeddings", n_stories=[20]
+    )
+
+    rho_voxels_repli, _ = load_data_wrapper(
+        data_folder=repli_folder,
+        which="embeddings",
+        n_stories=[20],
+    )
+
+    for i, items in enumerate(rho_voxels_repro.items()):
+        n, data = items
+        plot_voxel_performance(
+            scores=data, subject="UTS02", vmin=0, vmax=0.5, ax=axes[1, 1]
+        )
+
+    for i, items in enumerate(rho_voxels_repli.items()):
+        n, data = items
+        plot_voxel_performance(
+            scores=data, subject="UTS02", vmin=0, vmax=0.5, ax=axes[1, 2]
+        )
+
+    cbar = axes[1, 1].images[0].colorbar
+    cbar.ax.set_xlabel("Test-set correlation (r)", fontsize=12)
+    # cbar.ax.set_xticks([0, 0.5], labels=[0, 0.5])
 
     minor_ticks = np.arange(x[-1])
-    for a in ax:
+
+    for a in axes[0, 1::]:
         a.set_xticks(minor_ticks, minor=True)
-        a.set_xticks([5, 10, 15, 20, 25], labels=[5, 10, 15, 20, 25])
+        a.set_xticks([1, 5, 10, 15, 20, 25], labels=[1, 5, 10, 15, 20, 25])
         a.grid(which="major", visible=True, lw=0.5, alpha=0.7)
         a.grid(which="minor", visible=True, ls="--", lw=0.5, alpha=0.5)
         a.spines["top"].set_visible(False)
         a.spines["right"].set_visible(False)
 
-    fig.supxlabel("Number of Training Stories")
+    axes[0, 1].legend(title="Participant")
+    axes[0, 0].set_title("Published results\n(10.1038/s41597-023-02437-z)")
+    axes[0, 1].set_title(
+        "Reproducibility experiment\n(`different-team-same-artifacts`)"
+    )
+    axes[0, 2].set_title(
+        "Replication experiment\n(`different-team-different-artifacts`)"
+    )
+    axes[0, 1].set_ylabel("Mean Correlation (r)")
+
+    # fig.supxlabel("Number of Training Stories")
 
     plt.tight_layout()
 
