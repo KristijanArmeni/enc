@@ -406,35 +406,38 @@ def make_training_curve_fig(
     )
 
     # compute mean for rho_means_df
-    plot_rho_means_df = (
-        rho_voxel_means_df.mean(axis=1)
-        .to_frame()
-        .reset_index()
-        .rename(columns={0: "rho_mean"})
+    rho_means_df = (
+        rho_voxel_means_df.mean(axis=1).to_frame().rename(columns={0: "rho_mean"})
     )
-    plot_rho_sems_df = rho_sems_df.reset_index()
+    plot_df = pd.merge(
+        rho_means_df, rho_sems_df, left_index=True, right_index=True
+    ).reset_index()
+    # sort curr_n_train_stories for error bars
+    plot_df = plot_df.sort_values(
+        ["subject", "feature", "curr_n_train_stories", "shuffle"]
+    )
 
     sns.set_style("ticks")
     sns.set_palette("husl", 8)
 
     # plot
     ax = sns.lineplot(
-        data=plot_rho_means_df,
+        data=plot_df,
         x="curr_n_train_stories",
         y="rho_mean",
         hue="subject",
         ax=ax,
+        marker="o",
     )
 
     # add error bars
     colors = sns.husl_palette(8)
-    for idx, subject in enumerate(sorted(plot_rho_means_df["subject"].unique())):
-        subject_sems = plot_rho_sems_df[plot_rho_sems_df["subject"] == subject]
-        subject_means = plot_rho_means_df[plot_rho_sems_df["subject"] == subject]
+    for idx, subject in enumerate(sorted(plot_df["subject"].unique())):
+        subject_df = plot_df[plot_df["subject"] == subject]
         ax.fill_between(
-            x=subject_means["curr_n_train_stories"],
-            y1=subject_means["rho_mean"] - subject_sems["SEM"],
-            y2=subject_means["rho_mean"] + subject_sems["SEM"],
+            x=subject_df["curr_n_train_stories"],
+            y1=subject_df["rho_mean"] - subject_df["SEM"],
+            y2=subject_df["rho_mean"] + subject_df["SEM"],
             color=colors[idx],
             alpha=0.2,
         )
@@ -444,6 +447,7 @@ def make_training_curve_fig(
     ax.set_ylabel("Mean Correlation (r)")
     ax.set_xlim(0, 25)
     ax.set_ylim(0, 0.1)
+    # ax.get_legend().set_visible(False)
     sns.despine(ax=ax, top=True, right=True, left=True, bottom=True)
 
     return ax
