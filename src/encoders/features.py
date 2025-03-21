@@ -148,7 +148,7 @@ def get_embeddings(story: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     log.info(
         f"{len(exist_tokens)}/{len(tokens)}"
-        + f"(missing {len(tokens) - len(exist_tokens)})"
+        + f" (missing {len(tokens) - len(exist_tokens)}) "
         + "story tokens found in vocab."
     )
 
