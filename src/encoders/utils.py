@@ -47,7 +47,11 @@ def load_config():
 
 
 def check_make_dirs(
-    paths: Union[str, List[str]],
+    paths: Union[
+        str,
+        Path,
+        List[Union[str, Path]],
+    ],
     verbose: bool = True,
     isdir: bool = False,
 ) -> None:
