@@ -450,19 +450,16 @@ def crossval_simple(
     """
 
     if stories is None:
-        stories = STORIES.copy()
+        stories = STORIES
         if not isinstance(stories, list):
             raise ValueError(f"Config parameter invalid: STORIES: {stories}")
+    stories = stories.copy()
 
     if n_train_stories is None:
         n_train_stories = len(stories) - 1
 
-    if test_story is not None:
-        try:
-            stories.remove(test_story)
-        except ValueError as e:
-            log.critical(f"test_story: {test_story} is not in the pool of all stories.")
-            raise e
+    if test_story is not None and test_story in stories:
+        stories.remove(test_story)
 
     rng = np.random.default_rng(seed=seed)
 
