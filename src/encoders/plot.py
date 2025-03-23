@@ -68,6 +68,7 @@ def plot_voxel_performance(
     vmin: Optional[float] = 0.0,
     vmax: Optional[float] = 0.5,
     cmap: str = "inferno",
+    **kwargs,
 ):
     """Plots the given scores for each voxel.
 
@@ -90,6 +91,7 @@ def plot_voxel_performance(
     cmap : str, optional
         Color map for plot.
     ax : matplotlib.Axis,
+
     """
 
     vol_data = cortex.Volume(
@@ -97,10 +99,12 @@ def plot_voxel_performance(
     )
     # cortex.quickshow(vol_data)
 
+    # https://gallantlab.org/pycortex/generated/cortex.quickflat.make_figure.html
     _ = cortex.quickflat.make_figure(
         braindata=vol_data,
         fig=ax,
         recache=False,
+        **kwargs,
     )
 
     return None
@@ -327,7 +331,12 @@ def load_data_wrapper_df(
     return rho_voxel_means_df, rho_sems_df
 
 
-def make_performance_plots(scores_dict: Dict) -> matplotlib.figure.Figure:
+def make_performance_plots(
+    scores_dict: Dict,
+    subject: str,
+    ax_titles: bool,
+    **kwargs,
+) -> matplotlib.figure.Figure:
     n_n_train_stories = len(scores_dict)
 
     fig, ax = plt.subplots(
@@ -338,18 +347,21 @@ def make_performance_plots(scores_dict: Dict) -> matplotlib.figure.Figure:
 
     for i, items in enumerate(scores_dict.items()):
         n, data = items
-        plot_voxel_performance(scores=data, subject="UTS02", vmin=0, vmax=0.5, ax=ax[i])
-
-        ax[i].set_title(
-            f"{n} Training story" if int(n) == 1 else f"{n} Training stories"
+        plot_voxel_performance(
+            scores=data, subject=subject, vmin=0, vmax=0.5, ax=ax[i], **kwargs
         )
 
-    if n_n_train_stories > 1:
-        cbar = ax[1].images[0].colorbar
-    else:
-        cbar = ax[0].images[0].colorbar
+        if ax_titles:
+            ax[i].set_title(
+                f"{n} Training story" if int(n) == 1 else f"{n} Training stories"
+            )
 
-    cbar.ax.set_xlabel("Test-set correlation", fontsize=12)
+    if kwargs.get("with_colorbar"):
+        if n_n_train_stories > 1:
+            cbar = ax[1].images[0].colorbar
+        else:
+            cbar = ax[0].images[0].colorbar
+        cbar.ax.set_xlabel("Test-set correlation", fontsize=12)
 
     return fig
 
@@ -360,6 +372,8 @@ def make_brain_fig(
     feature: str,
     n_train_stories: list[int],
     shuffle: str = "not_shuffled",
+    ax_titles: bool = True,
+    **kwargs,
 ) -> matplotlib.figure.Figure:
     # load data
     rho_means, _ = load_data_wrapper(
@@ -378,7 +392,12 @@ def make_brain_fig(
                 curr_n_train_stories
             ][shuffle]
 
-    fig = make_performance_plots(scores_dict=scores_dict)
+    fig = make_performance_plots(
+        scores_dict=scores_dict,
+        subject=subject,
+        ax_titles=ax_titles,
+        **kwargs,
+    )
 
     return fig
 
@@ -417,8 +436,12 @@ def make_training_curve_fig(
         ["subject", "feature", "curr_n_train_stories", "shuffle"]
     )
 
-    sns.set_style("ticks")
-    sns.set_palette("husl", 8)
+    palette = sns.husl_palette(8)
+    sns.set_theme(
+        style="ticks",
+        palette=palette,
+        font="Verdana",
+    )
 
     # plot
     ax = sns.lineplot(
@@ -431,23 +454,24 @@ def make_training_curve_fig(
     )
 
     # add error bars
-    colors = sns.husl_palette(8)
+
     for idx, subject in enumerate(sorted(plot_df["subject"].unique())):
         subject_df = plot_df[plot_df["subject"] == subject]
         ax.fill_between(
             x=subject_df["curr_n_train_stories"],
             y1=subject_df["rho_mean"] - subject_df["SEM"],
             y2=subject_df["rho_mean"] + subject_df["SEM"],
-            color=colors[idx],
+            color=palette[idx],
             alpha=0.2,
         )
 
     # styling / text
-    ax.set_xlabel("Number of Taining Stories")
-    ax.set_ylabel("Mean Correlation (r)")
-    ax.set_xlim(0, 25)
-    ax.set_ylim(0, 0.1)
-    # ax.get_legend().set_visible(False)
+    ax.set_xlabel("Number of Training Stories", fontsize=18)
+    ax.set_ylabel("Mean Correlation (r)", fontsize=18)
+    ax.set_xlim(0, 25.25)
+    ax.set_ylim(0.01, 0.0875)
+    ax.set_yticks([0.02, 0.04, 0.06, 0.08], labels=["0.02", "0.04", "0.06", "0.08"])
+    ax.get_legend().set_visible(False)
     sns.despine(ax=ax, top=True, right=True, left=True, bottom=True)
 
     return ax
@@ -469,32 +493,27 @@ def save_fig_png_pdf(
     plt.close()
 
 
-def plot_all(
+def plot_figure1(
     reproduction_folder: Optional[str],
     replication_ridgeCV_folder: Optional[str],
-    replication_ridge_huth_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
-    main_subject: str = "UTS02",
-    n_train_stories_main_subject: list[int] = [1, 11, 25],
 ):
-    """Plots replication, and reproduction plots."""
+    """Plot figure 1 plots"""
 
-    plt.ioff()  # turn interactive mode off
+    subject = "UTS02"
+    figsize = (6, 4)
 
     if save_path is None:
-        save_path = "plots"
-
-    save_path = Path(save_path)
+        save_path = Path("plots", "figure1")
     check_make_dirs(save_path, isdir=True)
 
-    console.print("\nCorrelation X n_train_stories curve", style="red bold")
-
+    console.print("\nTraining curve", style="red bold")
     # REPRODUCTION: Training curve
     if reproduction_folder is not None:
         console.print(
             "\n > Reproduction: different-team-same-articacts", style="yellow"
         )
-        fig3_reproduction, ax3_reproduction = plt.subplots(figsize=(10, 8))
+        fig3_reproduction, ax3_reproduction = plt.subplots(figsize=figsize)
         make_training_curve_fig(
             run_folder_name=reproduction_folder,
             feature="eng1000",
@@ -517,7 +536,126 @@ def plot_all(
             style="yellow",
         )
         fig3_replication_ridgeCV, ax3_replication_ridgeCV = plt.subplots(
-            figsize=(10, 8)
+            figsize=figsize
+        )
+        make_training_curve_fig(
+            run_folder_name=replication_ridgeCV_folder,
+            feature="eng1000",
+            subjects=None,
+            n_train_stories=None,
+            shuffle="not_shuffled",
+            ax=ax3_replication_ridgeCV,
+        )
+        plt.tight_layout()
+        save_fig_png_pdf(
+            fig3_replication_ridgeCV,
+            save_path=save_path,
+            filename="training_curve_replication_ridgeCV",
+        )
+
+    console.print("\nBrain fig", style="red bold")
+    # REPRODUCTION: Brain fig
+    if (
+        reproduction_folder is not None
+        and Path(reproduction_folder, subject, "eng1000").exists()
+    ):
+        console.print(
+            "\n > Reproduction: different-team-same-articacts", style="yellow"
+        )
+        fig1_reproduction = make_brain_fig(
+            run_folder_name=reproduction_folder,
+            subject=subject,
+            feature="eng1000",
+            n_train_stories=[25],
+            shuffle="not_shuffled",
+            ax_titles=False,
+            with_colorbar=False,
+            with_labels=False,
+        )
+        save_fig_png_pdf(
+            fig1_reproduction,
+            save_path=save_path,
+            filename="reproduction_semantic_performance",
+        )
+
+    # REPLICATION ridgeCV: brain fig
+    if (
+        replication_ridgeCV_folder is not None
+        and Path(replication_ridgeCV_folder, subject, "eng1000").exists()
+    ):
+        console.print(
+            "\n > Replication ridgeCV: different-team-different-articacts",
+            style="yellow",
+        )
+        fig2_replication_ridgeCV = make_brain_fig(
+            run_folder_name=replication_ridgeCV_folder,
+            subject=subject,
+            feature="eng1000",
+            n_train_stories=[25],
+            shuffle="not_shuffled",
+            ax_titles=False,
+            with_colorbar=False,
+            with_labels=False,
+        )
+        save_fig_png_pdf(
+            fig2_replication_ridgeCV,
+            save_path=save_path,
+            filename="replication_ridgeCV_semantic_performance",
+        )
+
+
+def plot_all(
+    reproduction_folder: Optional[str],
+    replication_ridgeCV_folder: Optional[str],
+    replication_ridge_huth_folder: Optional[str],
+    save_path: Optional[Union[str, Path]],
+    main_subject: str = "UTS02",
+    n_train_stories_main_subject: list[int] = [1, 11, 25],
+    figsize_training_figures: tuple[int, int] = (6, 4),
+):
+    """Plots replication, and reproduction plots."""
+
+    plt.ioff()  # turn interactive mode off
+
+    if save_path is None:
+        save_path = "plots"
+
+    save_path = Path(save_path)
+    check_make_dirs(save_path, isdir=True)
+
+    console.print("\nCorrelation X n_train_stories curve", style="red bold")
+
+    # REPRODUCTION: Training curve
+    if reproduction_folder is not None:
+        console.print(
+            "\n > Reproduction: different-team-same-articacts", style="yellow"
+        )
+        fig3_reproduction, ax3_reproduction = plt.subplots(
+            figsize=figsize_training_figures
+        )
+        make_training_curve_fig(
+            run_folder_name=reproduction_folder,
+            feature="eng1000",
+            subjects=None,
+            n_train_stories=None,
+            shuffle="not_shuffled",
+            ax=ax3_reproduction,
+        )
+        plt.tight_layout()
+        save_fig_png_pdf(
+            fig3_reproduction,
+            save_path=save_path,
+            filename="training_curve_reproduction",
+        )
+
+    # REPLICATION ridgeCV: Training curve
+    if replication_ridgeCV_folder is not None:
+        console.print(
+            "\n > Replication ridgeCV: different-team-different-articacts",
+            style="yellow",
+        )
+        fig3_replication_ridgeCV, ax3_replication_ridgeCV = plt.subplots(
+            figsize=figsize_training_figures
         )
         make_training_curve_fig(
             run_folder_name=replication_ridgeCV_folder,
@@ -541,7 +679,7 @@ def plot_all(
             style="yellow",
         )
         fig3_replication_ridge_huth, ax3_replication_ridge_huth = plt.subplots(
-            figsize=(10, 8)
+            figsize=figsize_training_figures
         )
         make_training_curve_fig(
             run_folder_name=replication_ridge_huth_folder,
@@ -726,14 +864,27 @@ if __name__ == "__main__":
         default=None,
         help="path to where the figures are saved",
     )
+    parser.add_argument(
+        "--figure",
+        choices=["all", "figure1"],
+        default="all",
+        help="Which figures to plot. Default 'all'",
+    )
 
     args = parser.parse_args()
 
     cfg = load_config()
 
-    plot_all(
-        reproduction_folder=args.reproduction,
-        replication_ridgeCV_folder=args.replication_ridgeCV,
-        replication_ridge_huth_folder=args.replication_ridge_huth,
-        save_path=args.save_path,
-    )
+    if args.figure == "all":
+        plot_all(
+            reproduction_folder=args.reproduction,
+            replication_ridgeCV_folder=args.replication_ridgeCV,
+            replication_ridge_huth_folder=args.replication_ridge_huth,
+            save_path=args.save_path,
+        )
+    elif args.figure == "figure1":
+        plot_figure1(
+            reproduction_folder=args.reproduction,
+            replication_ridgeCV_folder=args.replication_ridgeCV,
+            save_path=args.save_path,
+        )
