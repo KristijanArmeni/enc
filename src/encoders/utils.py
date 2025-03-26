@@ -4,16 +4,17 @@ import random
 import time
 from datetime import datetime
 from pathlib import Path
-from random import choices
 from typing import List, Optional, Union
 
-import numpy as np
 import yaml
 
 ROOT = Path(__file__).parent.parent.parent
 FORMAT = "[%(levelname)s] %(name)s.%(funcName)s - %(message)s"
 
 logging.basicConfig(format=FORMAT)
+
+BRAIN_PLOT_ORIG_PNG = Path(ROOT, "data", "lebel_data", "brain_orig.png")
+TRAIN_CURVE_ORIG_PNG = Path(ROOT, "data", "lebel_data", "train_curve_orig.png")
 
 
 def get_logger(

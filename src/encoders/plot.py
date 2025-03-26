@@ -14,7 +14,6 @@ from cortex import svgoverlay
 
 from encoders.utils import (
     BRAIN_PLOT_ORIG_PNG,
-    ROOT,
     TRAIN_CURVE_ORIG_PNG,
     get_logger,
     load_config,
