@@ -8,12 +8,17 @@ import matplotlib as mpl
 import matplotlib.figure
 import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from cortex import svgoverlay
 
-from encoders.utils import ROOT, get_logger, load_config
+from encoders.utils import (
+    BRAIN_PLOT_ORIG_PNG,
+    ROOT,
+    TRAIN_CURVE_ORIG_PNG,
+    get_logger,
+    load_config,
+)
 
 log = get_logger(__name__)
 
@@ -88,10 +93,10 @@ def plot_voxel_performance(
     vol_data = cortex.Volume(
         scores, subject, f"{subject}_auto", vmin=vmin, vmax=vmax, cmap=cmap
     )
-    # cortex.quickshow(vol_data)
 
     _ = cortex.quickflat.make_figure(
         braindata=vol_data,
+        with_colorbar=False,
         fig=ax,
         recache=False,
     )
@@ -155,54 +160,29 @@ def make_brain_fig(data_folder, which):
     return fig
 
 
-runs_dir = load_config()["RUNS_DIR"]
-repro_folder = Path(runs_dir, "2025-03-12_15-25_487099")
-repli_folder = Path(runs_dir, "2025-03-06_17-05_265539")
+N_STORIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
 
 
-def make_training_curve_fig(
-    repli_folder: str, repro_folder: str
-) -> matplotlib.figure.Figure:
-    # load embedding model performance
-    data_repli = {
+def _load_means_sem(data_folder: str):
+    data_mean = {
         sub: load_data_wrapper(
-            data_folder=str(repro_folder),
+            data_folder=str(data_folder),
             subject=sub,
-            which="embeddings",
-            n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
+            which="eng1000",
+            n_stories=N_STORIES,
         )[0]
         for sub in SUBJECT_IDS
     }
 
-    data_repro = {
+    data_sem = {
         sub: load_data_wrapper(
-            data_folder=str(repli_folder),
+            data_folder=str(data_folder),
             subject=sub,
-            which="embeddings",
-            n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
-        )[0]
+            which="eng1000",
+            n_stories=N_STORIES,
+        )[1]
         for sub in SUBJECT_IDS
     }
-
-    # data_repli_sem = {sub:
-    #    load_data_wrapper(
-    #        ds=str(REPLI_FOLDER),
-    #        subject=sub,
-    #        which="embeddings",
-    #        n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
-    #    )[1]
-    #    for sub in SUBJECT_IDS
-    # }
-
-    # data_repro_sem = {sub:
-    #    load_data_wrapper(
-    #        ds=str(REPRO_FOLDER),
-    #        subject=sub,
-    #        which="embeddings",
-    #        n_stories=[1, 3, 5, 7, 9, 11, 13, 15, 20],
-    #    )[1]
-    #    for sub in SUBJECT_IDS
-    # }
 
     def _data2array_agg(data_dict: Dict, aggfunc) -> np.ndarray:
         out = np.array(
@@ -215,18 +195,26 @@ def make_training_curve_fig(
         return out
 
     # load the performance scores and average across cortex shape = (n_stories,)
-    y_repli = _data2array_agg(data_dict=data_repli, aggfunc=np.mean)
-    y_repro = _data2array_agg(data_dict=data_repro, aggfunc=np.mean)
+    y_mean = _data2array_agg(data_dict=data_mean, aggfunc=np.mean)
 
-    extras = np.array([[np.nan, np.nan, np.nan]]).T
-    y_repli = np.hstack([y_repli, extras])
-    y_repro = np.hstack([y_repro, extras])
+    y_sem = np.array(
+        [[subdict[n].item() for n in subdict.keys()] for subdict in data_sem.values()]
+    )
 
-    # y_repli_sem = _data2array_agg(data_dict=data_repli_sem, aggfunc=sem)
-    # y_repro_sem = _data2array_agg(data_dict=data_repro_sem, aggfunc=sem)
+    return y_mean, y_sem
 
-    fig = plt.figure(figsize=(15, 6.5))
-    gs = gridspec.GridSpec(2, 3, width_ratios=[1, 1, 1], height_ratios=[1, 1.2])
+
+def make_training_curve_fig(
+    repro_folder: str,
+    repli_folder: str,
+) -> matplotlib.figure.Figure:
+    y_repro, y_repro_sem = _load_means_sem(data_folder=repro_folder)
+    y_repli, y_repli_sem = _load_means_sem(data_folder=repli_folder)
+
+    fig = plt.figure(figsize=(15, 6.5), constrained_layout=True)
+    gs = gridspec.GridSpec(
+        3, 3, width_ratios=[1, 1, 1], height_ratios=[1, 1, 0.1], figure=fig
+    )
 
     # create axes objects for plotting
     # Create first subplot (for image) without sharing axes
@@ -248,14 +236,14 @@ def make_training_curve_fig(
 
     axes = np.array(axes)
 
+    cax = fig.add_subplot(gs[2, 1])
+
     for ax in axes[0, :]:
         ax.set_prop_cycle(color=HUSL_PALETTE)
 
-    ORIG_RESULT = Path(ROOT, "src", "encoders", "orig.png")
-    img = mpimg.imread(ORIG_RESULT)
+    img = mpimg.imread(TRAIN_CURVE_ORIG_PNG)
     axes[0, 0].imshow(img)
-    ORIG_BRAIN = Path(ROOT, "src", "encoders", "brain_orig.png")
-    img2 = mpimg.imread(ORIG_BRAIN)
+    img2 = mpimg.imread(BRAIN_PLOT_ORIG_PNG)
     axes[1, 0].imshow(img2)
 
     height, width = img.shape[:2]
@@ -268,70 +256,37 @@ def make_training_curve_fig(
     axes[0, 0].axis("off")
     axes[1, 0].axis("off")
 
-    # Force the figure to draw so we can get correct positions
-    fig.canvas.draw()
-
-    # Get the positions of both subplots we want to group
-    pos_00 = axes[0, 0].get_position()
-    pos_10 = axes[1, 0].get_position()
-
-    # Create a rectangle patch that encompasses both subplots
-    padding = 0.03
-    rect = patches.Rectangle(
-        (
-            pos_00.x0 - padding,
-            pos_10.y0 - padding,
-        ),  # Lower left corner (from bottom subplot)
-        pos_00.width + 2 * padding,  # Width (use first subplot's width)
-        (pos_00.y0 + pos_00.height) - pos_10.y0 + 0.04,  # Total height of both subplots
-        linewidth=2,
-        edgecolor="#4682B4",  # Steel blue
-        facecolor="lightblue",
-        alpha=0.2,
-        linestyle="--",
-        zorder=0,
-        transform=fig.transFigure,
-    )
-
-    # Add the rectangle to the figure
-    fig.add_artist(rect)
-
     # ["1", "3", "5", ...]
-    x = [int(e) for e in list(data_repli["UTS01"].keys())] + [25]
+    x = N_STORIES
 
     axes[0, 1].plot(
-        x, y_repli.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS]
+        x, y_repro.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS]
     )
-    axes[0, 2].plot(x, y_repro.T, "-o")
-    axes[0, 2].label_outer()
+    axes[0, 2].plot(x, y_repli.T, "-o")
 
-    for i in range(3):
+    for i in range(1, 3):
         axes[0, i].set_box_aspect(aspect_ratio)
 
     # plot standard erros
-    # for i in range(y_repli_sem.shape[0]):
-    #    ax[0].fill_between(
-    #        x,
-    #        y1=y_repli[i] - y_repli_sem[i],
-    #        y2=y_repli[i] + y_repli_sem[i],
-    #        alpha=0.3
-    #    )
-    #    ax[1].fill_between(
-    #        x,
-    #        y1=y_repro[i] - y_repro_sem[i],
-    #        y2=y_repro[i] + y_repro_sem[i],
-    #        alpha=0.3
-    #    )
+    for i in range(y_repli_sem.shape[0]):
+        axes[0, 1].fill_between(
+            x, y1=y_repro[i] - y_repro_sem[i], y2=y_repro[i] + y_repro_sem[i], alpha=0.3
+        )
+        axes[0, 2].fill_between(
+            x, y1=y_repli[i] - y_repli_sem[i], y2=y_repli[i] + y_repli_sem[i], alpha=0.3
+        )
 
     # load the fMRI data
     rho_voxels_repro, _ = load_data_wrapper(
-        data_folder=repro_folder, which="embeddings", n_stories=[20]
+        data_folder=repro_folder,
+        which="eng1000",
+        n_stories=[25],
     )
 
     rho_voxels_repli, _ = load_data_wrapper(
         data_folder=repli_folder,
-        which="embeddings",
-        n_stories=[20],
+        which="eng1000",
+        n_stories=[25],
     )
 
     for i, items in enumerate(rho_voxels_repro.items()):
@@ -346,33 +301,84 @@ def make_training_curve_fig(
             scores=data, subject="UTS02", vmin=0, vmax=0.5, ax=axes[1, 2]
         )
 
-    cbar = axes[1, 1].images[0].colorbar
-    cbar.ax.set_xlabel("Test-set correlation (r)", fontsize=12)
-    # cbar.ax.set_xticks([0, 0.5], labels=[0, 0.5])
+    cbar = fig.colorbar(
+        mappable=axes[1, 1].images[0],
+        cax=cax,
+        orientation="horizontal",
+        shrink=0.5,
+    )
+    cbar.ax.set_xlabel("Correlation (r)", fontsize=12)
 
     minor_ticks = np.arange(x[-1])
 
     for a in axes[0, 1::]:
         a.set_xticks(minor_ticks, minor=True)
-        a.set_xticks([1, 5, 10, 15, 20, 25], labels=[1, 5, 10, 15, 20, 25])
+        a.set_xticks([0, 5, 10, 15, 20, 25], labels=[0, 5, 10, 15, 20, 25], fontsize=12)
+        a.set_xlabel("Number of Training Stories", fontsize=12)
+        a.tick_params(axis="both", which="major", labelsize=12)
         a.grid(which="major", visible=True, lw=0.5, alpha=0.7)
         a.grid(which="minor", visible=True, ls="--", lw=0.5, alpha=0.5)
         a.spines["top"].set_visible(False)
         a.spines["right"].set_visible(False)
+        a.spines["left"].set_visible(False)
+        a.spines["bottom"].set_visible(False)
 
     axes[0, 1].legend(title="Participant")
-    axes[0, 0].set_title("Published results\n(10.1038/s41597-023-02437-z)")
-    axes[0, 1].set_title(
-        "Reproducibility experiment\n(`different-team-same-artifacts`)"
-    )
-    axes[0, 2].set_title(
-        "Replication experiment\n(`different-team-different-artifacts`)"
-    )
-    axes[0, 1].set_ylabel("Mean Correlation (r)")
+    # axes[0, 0].set_title("Published results\n(10.1038/s41597-023-02437-z)")
+    # axes[0, 1].set_title(
+    #    "Reproducibility experiment\n(`different-team-same-artifacts`)"
+    # )
+    # axes[0, 2].set_title(
+    #    "Replication experiment\n(`different-team-different-artifacts`)"
+    # )
+    axes[0, 1].set_ylabel("Mean Correlation (r)", fontsize=12)
 
-    # fig.supxlabel("Number of Training Stories")
+    return fig
 
-    plt.tight_layout()
+
+def plot_repli_comparison(repro_folder: str, repli_folder1: str, repli_folder2: str):
+    y_mean, y_sem = _load_means_sem(repro_folder)
+    y_mean1, y_sem1 = _load_means_sem(repli_folder1)
+    y_mean2, y_sem2 = _load_means_sem(repli_folder2)
+
+    x = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
+
+    fig, ax = plt.subplots(1, 3, figsize=(12, 3.5), sharey=True, layout="constrained")
+
+    for a in ax:
+        a.set_prop_cycle(color=HUSL_PALETTE)
+
+    all_data = [
+        (y_mean, y_sem),
+        (y_mean1, y_sem1),
+        (y_mean2, y_sem2),
+    ]
+
+    for k, data in enumerate(all_data):
+        y_mean, y_sem = data
+        ax[k].plot(x, y_mean.T, "-o", label=[s.replace("UT", "") for s in SUBJECT_IDS])
+
+        for i in range(y_sem1.shape[0]):
+            ax[k].fill_between(
+                x, y1=y_mean[i] - y_sem[i], y2=y_mean[i] + y_sem[i], alpha=0.3
+            )
+
+    minor_ticks = np.arange(x[-1])
+    for a in ax:
+        a.set_xticks(minor_ticks, minor=True)
+        a.set_xticks([0, 5, 10, 15, 20, 25], labels=[0, 5, 10, 15, 20, 25])
+        a.grid(which="major", visible=True, lw=0.5, alpha=0.7)
+        a.grid(which="minor", visible=True, ls="--", lw=0.5, alpha=0.5)
+        a.spines["top"].set_visible(False)
+        a.spines["right"].set_visible(False)
+        a.spines["left"].set_visible(False)
+        a.spines["bottom"].set_visible(False)
+
+    # ax[0].set_title("Replication")
+    # ax[1].set_title("Reproduction")
+    # ax[2].set_title("Reproduction 2")
+    ax[0].set_ylabel("Mean correlation (r)")
+    fig.supxlabel("Number of training stories")
 
     return fig
 
@@ -382,13 +388,16 @@ if __name__ == "__main__":
         "plot.py",
         description="Plot the replication figures and save as .pdf and .png",
     )
-
     parser.add_argument(
-        "exp1_folder",
+        "repro_folder",
         help="folder with results for the replication experiment to be ploted",
     )
     parser.add_argument(
-        "exp2_folder",
+        "repli_folder",
+        help="folder with result for the reproducibility experiment to be ploted",
+    )
+    parser.add_argument(
+        "repli_folder2",
         help="folder with result for the reproducibility experiment to be ploted",
     )
     parser.add_argument("save_path", help="path to where the figures are saved")
@@ -399,64 +408,38 @@ if __name__ == "__main__":
 
     savepath = Path(args.save_path)
 
-    # replication figure
-    fig1 = make_brain_fig(data_folder=args.exp1_folder, which="embeddings")
-    fig1.suptitle(
-        "Replication: "
-        + "Semantic encoding model performance with increasing training data",
-        fontsize=14,
-    )
-
-    fn1 = str(savepath / "repli_semantic_performance.pdf")
-    log.info(f"Saving {fn1}")
-    fig1.savefig(fn1, bbox_inches="tight", transparent=True)
-
-    fn1_png = fn1.replace(".pdf", ".png")
-    log.info(f"Saving {fn1_png}")
-    fig1.savefig(fn1_png, bbox_inches="tight", dpi=300)
-
-    # REPRODUCIBILITY EXPERIMENT FIGURE
-    fig2 = make_brain_fig(data_folder=args.exp2_folder, which="embeddings")
-    fig2.suptitle(
-        "Reproducibility: "
-        + "Semantic encoding model performance with increasing training data",
-        fontsize=14,
-    )
-
-    fn2 = str(savepath / "repro_semantic_performance.pdf")
-    log.info(f"Saving {fn2}")
-    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
-
-    fn2_png = fn2.replace(".pdf", ".png")
-    log.info(f"Saving {fn2_png}")
-    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
-
-    # REPRODUCIBILITY EXTENSION FIGURE
-    fig2 = make_brain_fig(data_folder=args.exp2_folder, which="envelope")
-    fig2.suptitle(
-        "Extension: "
-        + "Sensory encoding model performance with increasing training data",
-        fontsize=14,
-    )
-
-    fn2 = str(savepath / "extension_sensory_performance.pdf")
-    log.info(f"Saving {fn2}")
-    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
-
-    fn2_png = fn2.replace(".pdf", ".png")
-    log.info(f"Saving {fn2_png}")
-    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
-
     # TRAINING CURVE FIGURE
-    fig3 = make_training_curve_fig(
-        repli_folder=args.exp1_folder,
-        repro_folder=args.exp2_folder,
+    fig1 = make_training_curve_fig(
+        repro_folder=args.repro_folder,
+        repli_folder=args.repli_folder,
     )
 
-    fn3 = str(savepath / "training_curve.pdf")
-    log.info(f"Saving {fn3}")
-    fig3.savefig(fn3, bbox_inches="tight", transparent=True)
+    fn = str(savepath / "training_curve.pdf")
+    log.info(f"Saving {fn}")
+    fig1.savefig(fn, bbox_inches="tight", transparent=True)
 
-    fn3_png = fn3.replace(".pdf", ".png")
+    fn3_png = fn.replace(".pdf", ".png")
     log.info(f"Saving {fn3_png}")
-    fig3.savefig(fn3_png, bbox_inches="tight", dpi=300)
+    fig1.savefig(fn3_png, bbox_inches="tight", dpi=300)
+
+    fn_svg = fn.replace(".pdf", ".svg")
+    log.info(f"Saving {fn_svg}")
+    fig1.savefig(fn_svg, bbox_inches="tight")
+
+    fig2 = plot_repli_comparison(
+        repro_folder=args.repro_folder,
+        repli_folder1=args.repli_folder,
+        repli_folder2=args.repli_folder2,
+    )
+
+    fn2 = str(savepath / "repli_vs_repli2.pdf")
+    log.info(f"Saving {fn2}")
+    fig2.savefig(fn2, bbox_inches="tight", transparent=True)
+
+    fn2_png = fn2.replace(".pdf", ".png")
+    log.info(f"Saving {fn2_png}")
+    fig2.savefig(fn2_png, bbox_inches="tight", dpi=300)
+
+    fn3_svg = fn2.replace(".pdf", ".svg")
+    log.info(f"Saving {fn3_svg}")
+    fig2.savefig(fn3_svg, bbox_inches="tight")
