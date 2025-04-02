@@ -29,6 +29,8 @@ mpl.rcParams["xtick.labelsize"] = 14
 mpl.rcParams["ytick.labelsize"] = 14
 mpl.rcParams["axes.labelsize"] = 14
 mpl.rcParams["figure.labelsize"] = 14
+mpl.rcParams["font.family"] = "sans-serif"
+mpl.rcParams["font.sans-serif"] = "Verdana"
 
 SUBJECT_IDS = ["UTS01", "UTS02", "UTS03"]
 # this 8-color is also available in seaborn:
@@ -402,6 +404,30 @@ def make_brain_fig(
     return fig
 
 
+def make_colorbar(
+    ax: matplotlib.axes.Axes,
+    vmin: float = 0,
+    vmax: float = 0.5,
+    cmap: str = "inferno",
+) -> matplotlib.axes.Axes:
+    # Create a horizontal colorbar
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)  # type: ignore
+    cbar = mpl.colorbar.ColorbarBase(  # type: ignore
+        ax,
+        cmap=cmap,
+        norm=norm,
+        orientation="horizontal",
+    )
+
+    # Set labels and ticks
+    cbar.outline.set_visible(False)
+    cbar.set_label("Correlation (r)", labelpad=-10, fontsize=18)
+    cbar.set_ticks([0, 0.5], labels=["0", "0.5"])
+    cbar.ax.tick_params(size=0, axis="x", pad=10, labelsize=18)
+
+    return ax
+
+
 def make_training_curve_fig(
     run_folder_name: str,
     feature: str,
@@ -409,11 +435,15 @@ def make_training_curve_fig(
     n_train_stories: Optional[list[int]],
     shuffle: str,
     ax: Optional[matplotlib.axes.Axes] = None,
+    plot_config: Optional[dict] = None,
 ) -> matplotlib.axes.Axes:
     """Plots mean correlation with standard error."""
 
     assert not isinstance(feature, list), "Can only plot for one feature"
     assert not isinstance(shuffle, list), "Can only plot for one shuffle"
+
+    if plot_config is None:
+        plot_config = dict()
 
     # load for multiple subjects and n_train_stories
     rho_voxel_means_df, rho_sems_df = load_data_wrapper_df(
@@ -451,6 +481,7 @@ def make_training_curve_fig(
         hue="subject",
         ax=ax,
         marker="o",
+        markersize=9,
     )
 
     # add error bars
@@ -468,9 +499,12 @@ def make_training_curve_fig(
     # styling / text
     ax.set_xlabel("Number of Training Stories", fontsize=18)
     ax.set_ylabel("Mean Correlation (r)", fontsize=18)
-    ax.set_xlim(0, 25.25)
-    ax.set_ylim(0.01, 0.0875)
-    ax.set_yticks([0.02, 0.04, 0.06, 0.08], labels=["0.02", "0.04", "0.06", "0.08"])
+    ax.set_xlim(plot_config.get("xlim", (0, 25.25)))
+    ax.set_ylim(plot_config.get("ylim", (0.01, 0.0875)))
+    ax.set_yticks(
+        plot_config.get("yticks", [0.02, 0.04, 0.06, 0.08]),
+        labels=plot_config.get("ylabels", ["0.02", "0.04", "0.06", "0.08"]),
+    )
     ax.get_legend().set_visible(False)
     sns.despine(ax=ax, top=True, right=True, left=True, bottom=True)
 
@@ -490,6 +524,10 @@ def save_fig_png_pdf(
     fn_png = fn.replace(".pdf", ".png")
     log.info(f"Saving {fn_png}")
     fig.savefig(fn_png, bbox_inches="tight", dpi=300)
+
+    fn_svg = fn.replace(".pdf", ".svg")
+    log.info(f"Saving {fn_svg}")
+    fig.savefig(fn_svg, bbox_inches="tight")
     plt.close()
 
 
@@ -602,6 +640,87 @@ def plot_figure1(
             save_path=save_path,
             filename="replication_ridgeCV_semantic_performance",
         )
+
+    fig_cbar, ax = plt.subplots(figsize=(6, 0.45))
+    make_colorbar(ax)
+
+    console.print("\n > Colorbar", style="yellow")
+    save_fig_png_pdf(
+        fig=fig_cbar,
+        save_path=save_path,
+        filename="colorbar",
+    )
+
+
+def plot_figure2(
+    replication_ridgeCV_folder: str,
+    replication_ridge_huth_folder: str,
+    save_path: Optional[str],
+):
+    if save_path is None:
+        save_path = "plots"
+
+
+def plot_figure4(
+    replication_ridge_huth_folder: str,
+    save_path: Optional[Union[str, Path]] = None,
+):
+    console.print("\nFigure 4: Extension: Audio Envelope", style="red bold")
+    subject = "UTS02"
+    figsize = (6, 4)
+
+    if save_path is None:
+        save_path = Path("plots", "figure4")
+    check_make_dirs(save_path, isdir=True)
+
+    console.print("\n > Training curve - ridge_huth:", style="yellow")
+    fig4_extension_curve, ax4_extension_curve = plt.subplots(figsize=figsize)
+    make_training_curve_fig(
+        run_folder_name=replication_ridge_huth_folder,
+        feature="envelope",
+        subjects=None,
+        n_train_stories=None,
+        shuffle="not_shuffled",
+        ax=ax4_extension_curve,
+        plot_config=dict(
+            ylim=(0.004, 0.026),
+            yticks=[0.005, 0.01, 0.015, 0.02, 0.025],
+            ylabels=[".005", ".010", ".015", ".020", ".025"],
+        ),
+    )
+    plt.tight_layout()
+    save_fig_png_pdf(
+        fig4_extension_curve,
+        save_path=save_path,
+        filename="training_curve_extension_ridge_huth",
+    )
+
+    console.print("\n > Brain fig - ridge_huth", style="yellow")
+    fig4_extension_brain = make_brain_fig(
+        run_folder_name=replication_ridge_huth_folder,
+        subject=subject,
+        feature="envelope",
+        n_train_stories=[25],
+        shuffle="not_shuffled",
+        ax_titles=False,
+        with_colorbar=False,
+        with_labels=False,
+    )
+    save_fig_png_pdf(
+        fig4_extension_brain,
+        save_path=save_path,
+        filename="semantic_performance_extension_ridge_huth",
+    )
+
+    fig_cbar, ax = plt.subplots(figsize=(6, 0.45))
+    make_colorbar(ax)
+
+    console.print("\n > Colorbar", style="yellow")
+    save_fig_png_pdf(
+        fig=fig_cbar,
+        save_path=save_path,
+        filename="colorbar",
+    )
 
 
 def plot_all(
@@ -866,7 +985,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--figure",
-        choices=["all", "figure1"],
+        choices=["all", "figure1", "figure4"],
         default="all",
         help="Which figures to plot. Default 'all'",
     )
@@ -886,5 +1005,16 @@ if __name__ == "__main__":
         plot_figure1(
             reproduction_folder=args.reproduction,
             replication_ridgeCV_folder=args.replication_ridgeCV,
+            save_path=args.save_path,
+        )
+    elif args.figure == "figure2":
+        plot_figure2(
+            replication_ridgeCV_folder=args.replication_ridgeCV,
+            replication_ridge_huth_folder=args.replication_ridge_huth,
+            save_path=args.save_path,
+        )
+    elif args.figure == "figure4":
+        plot_figure4(
+            replication_ridge_huth_folder=args.replication_ridge_huth,
             save_path=args.save_path,
         )
