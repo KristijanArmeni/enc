@@ -531,18 +531,18 @@ def save_fig_png_pdf(
     plt.close()
 
 
-def plot_figure1(
+def plot_figure2(
     reproduction_folder: Optional[str],
     replication_ridgeCV_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
 ):
-    """Plot figure 1 plots"""
+    """Plot figure 2 plots"""
 
     subject = "UTS02"
     figsize = (6, 4)
 
     if save_path is None:
-        save_path = Path("plots", "figure1")
+        save_path = Path("plots", "figure2")
     check_make_dirs(save_path, isdir=True)
 
     console.print("\nTraining curve", style="red bold")
@@ -652,7 +652,7 @@ def plot_figure1(
     )
 
 
-def plot_figure2(
+def plot_figure3(
     replication_ridgeCV_folder: str,
     replication_ridge_huth_folder: str,
     save_path: Optional[str],
@@ -662,7 +662,7 @@ def plot_figure2(
 
 
 def plot_figure4(
-    replication_ridge_huth_folder: str,
+    replication_ridgeCV_folder: str,
     save_path: Optional[Union[str, Path]] = None,
 ):
     console.print("\nFigure 4: Extension: Audio Envelope", style="red bold")
@@ -676,7 +676,7 @@ def plot_figure4(
     console.print("\n > Training curve - ridge_huth:", style="yellow")
     fig4_extension_curve, ax4_extension_curve = plt.subplots(figsize=figsize)
     make_training_curve_fig(
-        run_folder_name=replication_ridge_huth_folder,
+        run_folder_name=replication_ridgeCV_folder,
         feature="envelope",
         subjects=None,
         n_train_stories=None,
@@ -697,7 +697,7 @@ def plot_figure4(
 
     console.print("\n > Brain fig - ridge_huth", style="yellow")
     fig4_extension_brain = make_brain_fig(
-        run_folder_name=replication_ridge_huth_folder,
+        run_folder_name=replication_ridgeCV_folder,
         subject=subject,
         feature="envelope",
         n_train_stories=[25],
@@ -721,237 +721,6 @@ def plot_figure4(
         save_path=save_path,
         filename="colorbar",
     )
-
-
-def plot_all(
-    reproduction_folder: Optional[str],
-    replication_ridgeCV_folder: Optional[str],
-    replication_ridge_huth_folder: Optional[str],
-    save_path: Optional[Union[str, Path]],
-    main_subject: str = "UTS02",
-    n_train_stories_main_subject: list[int] = [1, 11, 25],
-    figsize_training_figures: tuple[int, int] = (6, 4),
-):
-    """Plots replication, and reproduction plots."""
-
-    plt.ioff()  # turn interactive mode off
-
-    if save_path is None:
-        save_path = "plots"
-
-    save_path = Path(save_path)
-    check_make_dirs(save_path, isdir=True)
-
-    console.print("\nCorrelation X n_train_stories curve", style="red bold")
-
-    # REPRODUCTION: Training curve
-    if reproduction_folder is not None:
-        console.print(
-            "\n > Reproduction: different-team-same-articacts", style="yellow"
-        )
-        fig3_reproduction, ax3_reproduction = plt.subplots(
-            figsize=figsize_training_figures
-        )
-        make_training_curve_fig(
-            run_folder_name=reproduction_folder,
-            feature="eng1000",
-            subjects=None,
-            n_train_stories=None,
-            shuffle="not_shuffled",
-            ax=ax3_reproduction,
-        )
-        plt.tight_layout()
-        save_fig_png_pdf(
-            fig3_reproduction,
-            save_path=save_path,
-            filename="training_curve_reproduction",
-        )
-
-    # REPLICATION ridgeCV: Training curve
-    if replication_ridgeCV_folder is not None:
-        console.print(
-            "\n > Replication ridgeCV: different-team-different-articacts",
-            style="yellow",
-        )
-        fig3_replication_ridgeCV, ax3_replication_ridgeCV = plt.subplots(
-            figsize=figsize_training_figures
-        )
-        make_training_curve_fig(
-            run_folder_name=replication_ridgeCV_folder,
-            feature="eng1000",
-            subjects=None,
-            n_train_stories=None,
-            shuffle="not_shuffled",
-            ax=ax3_replication_ridgeCV,
-        )
-        plt.tight_layout()
-        save_fig_png_pdf(
-            fig3_replication_ridgeCV,
-            save_path=save_path,
-            filename="training_curve_replication_ridgeCV",
-        )
-
-    # REPLICATION ridge_huth: Training curve
-    if replication_ridge_huth_folder is not None:
-        console.print(
-            "\n > Replication ridge_huth: different-team-quasi_same-articacts",
-            style="yellow",
-        )
-        fig3_replication_ridge_huth, ax3_replication_ridge_huth = plt.subplots(
-            figsize=figsize_training_figures
-        )
-        make_training_curve_fig(
-            run_folder_name=replication_ridge_huth_folder,
-            feature="eng1000",
-            subjects=None,
-            n_train_stories=None,
-            shuffle="not_shuffled",
-            ax=ax3_replication_ridge_huth,
-        )
-        plt.tight_layout()
-        save_fig_png_pdf(
-            fig3_replication_ridge_huth,
-            save_path=save_path,
-            filename="training_curve_replication_ridge_huth",
-        )
-
-    console.print("\nBrain fig", style="red bold")
-    # REPRODUCTION: Brain fig
-    if (
-        reproduction_folder is not None
-        and Path(reproduction_folder, main_subject, "eng1000").exists()
-    ):
-        console.print(
-            "\n > Reproduction: different-team-same-articacts", style="yellow"
-        )
-        fig1_reproduction = make_brain_fig(
-            run_folder_name=reproduction_folder,
-            subject=main_subject,
-            feature="eng1000",
-            n_train_stories=n_train_stories_main_subject,
-            shuffle="not_shuffled",
-        )
-        fig1_reproduction.suptitle(
-            "Reproduction: "
-            + "Semantic encoding model performance with increasing training data",
-            fontsize=14,
-        )
-        save_fig_png_pdf(
-            fig1_reproduction,
-            save_path=save_path,
-            filename="reproduction_semantic_performance",
-        )
-
-    # REPLICATION ridgeCV: brain fig
-    if (
-        replication_ridgeCV_folder is not None
-        and Path(replication_ridgeCV_folder, main_subject, "eng1000").exists()
-    ):
-        console.print(
-            "\n > Replication ridgeCV: different-team-different-articacts",
-            style="yellow",
-        )
-        fig2_replication_ridgeCV = make_brain_fig(
-            run_folder_name=replication_ridgeCV_folder,
-            subject=main_subject,
-            feature="eng1000",
-            n_train_stories=n_train_stories_main_subject,
-            shuffle="not_shuffled",
-        )
-        fig2_replication_ridgeCV.suptitle(
-            "Replication: "
-            + "Semantic encoding model performance with increasing training data",
-            fontsize=14,
-        )
-        save_fig_png_pdf(
-            fig2_replication_ridgeCV,
-            save_path=save_path,
-            filename="replication_ridgeCV_semantic_performance",
-        )
-
-    # REPLICATION ridge_huth: brain fig
-    if (
-        replication_ridge_huth_folder is not None
-        and Path(replication_ridge_huth_folder, main_subject, "eng1000").exists()
-    ):
-        console.print(
-            "\n > Replication ridge_huth: different-team-quasi_same_articacts",
-            style="yellow",
-        )
-        fig2_replication_ridge_huth = make_brain_fig(
-            run_folder_name=replication_ridge_huth_folder,
-            subject=main_subject,
-            feature="eng1000",
-            n_train_stories=n_train_stories_main_subject,
-            shuffle="not_shuffled",
-        )
-        fig2_replication_ridge_huth.suptitle(
-            "Replication: "
-            + "Semantic encoding model performance with increasing training data",
-            fontsize=14,
-        )
-        save_fig_png_pdf(
-            fig2_replication_ridge_huth,
-            save_path=save_path,
-            filename="replication_ridge_huth_semantic_performance",
-        )
-
-    console.print("\nBrain fig audio envelope", style="red bold")
-    # REPLICATION ridgeCV: brain fig
-    if (
-        replication_ridgeCV_folder is not None
-        and Path(replication_ridgeCV_folder, main_subject, "envelope").exists()
-    ):
-        console.print(
-            "\n > Replication ridgeCV: different-team-different-articacts",
-            style="yellow",
-        )
-        fig2_replication_ridgeCV_envelope = make_brain_fig(
-            run_folder_name=replication_ridgeCV_folder,
-            subject=main_subject,
-            feature="envelope",
-            n_train_stories=n_train_stories_main_subject,
-            shuffle="not_shuffled",
-        )
-        fig2_replication_ridgeCV_envelope.suptitle(
-            "Extension: "
-            + "Sensory encoding model performance with increasing training data",
-            fontsize=14,
-        )
-
-        save_fig_png_pdf(
-            fig2_replication_ridgeCV_envelope,
-            save_path=save_path,
-            filename="extension_ridgeCV_sensory_performance",
-        )
-
-    # REPLICATION ridge_huth: brain fig
-    if (
-        replication_ridge_huth_folder is not None
-        and Path(replication_ridge_huth_folder, main_subject, "envelope").exists()
-    ):
-        console.print(
-            "\n > Replication ridge_huth: different-team-quasi_same-articacts",
-            style="yellow",
-        )
-        fig2_replication_ridge_huth_envelope = make_brain_fig(
-            run_folder_name=replication_ridge_huth_folder,
-            subject=main_subject,
-            feature="envelope",
-            n_train_stories=n_train_stories_main_subject,
-            shuffle="not_shuffled",
-        )
-        fig2_replication_ridge_huth_envelope.suptitle(
-            "Extension: "
-            + "Sensory encoding model performance with increasing training data",
-            fontsize=14,
-        )
-
-        save_fig_png_pdf(
-            fig2_replication_ridge_huth_envelope,
-            save_path=save_path,
-            filename="extension_ridgeCV_sensory_performance",
-        )
 
 
 if __name__ == "__main__":
@@ -994,27 +763,20 @@ if __name__ == "__main__":
 
     cfg = load_config()
 
-    if args.figure == "all":
-        plot_all(
-            reproduction_folder=args.reproduction,
-            replication_ridgeCV_folder=args.replication_ridgeCV,
-            replication_ridge_huth_folder=args.replication_ridge_huth,
-            save_path=args.save_path,
-        )
-    elif args.figure == "figure1":
-        plot_figure1(
-            reproduction_folder=args.reproduction,
-            replication_ridgeCV_folder=args.replication_ridgeCV,
-            save_path=args.save_path,
-        )
-    elif args.figure == "figure2":
+    if args.figure in ["figure2", "all"]:
         plot_figure2(
+            reproduction_folder=args.reproduction,
+            replication_ridgeCV_folder=args.replication_ridgeCV,
+            save_path=args.save_path,
+        )
+    elif args.figure in ["figure3", "all"]:
+        plot_figure3(
             replication_ridgeCV_folder=args.replication_ridgeCV,
             replication_ridge_huth_folder=args.replication_ridge_huth,
             save_path=args.save_path,
         )
-    elif args.figure == "figure4":
+    elif args.figure in ["figure4", "all"]:
         plot_figure4(
-            replication_ridge_huth_folder=args.replication_ridge_huth,
+            replication_ridgeCV_folder=args.replication_ridgeCV,
             save_path=args.save_path,
         )
