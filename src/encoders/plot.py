@@ -24,28 +24,9 @@ from encoders.utils import check_make_dirs, get_logger, load_config
 console = Console()
 log = get_logger(__name__)
 
-# matpltotlib params
-mpl.rcParams["xtick.labelsize"] = 14
-mpl.rcParams["ytick.labelsize"] = 14
-mpl.rcParams["axes.labelsize"] = 14
-mpl.rcParams["figure.labelsize"] = 14
-mpl.rcParams["font.family"] = "sans-serif"
-mpl.rcParams["font.sans-serif"] = "Verdana"
 
 SUBJECT_IDS = ["UTS01", "UTS02", "UTS03"]
-# this 8-color is also available in seaborn:
-# https://seaborn.pydata.org/generated/seaborn.husl_palette.html
-# but defined here manually to avoid needing seaborn as dependency
-HUSL_PALETTE = [
-    "#f77189",
-    "#ce9032",
-    "#97a431",
-    "#32b166",
-    "#36ada4",
-    "#39a7d0",
-    "#a48cf4",
-    "#f561dd",
-]
+PALETTE = sns.husl_palette(8)
 
 # make sure inkscape is installed
 INKSCAPE_PATH = load_config().get("INKSCAPE_PATH")
@@ -61,6 +42,21 @@ if not Path(INKSCAPE_PATH).exists():
 # add inkscape path to PATH
 os.environ["PATH"] = INKSCAPE_PATH + ":" + os.environ["PATH"]
 svgoverlay.INKSCAPE_VERSION = str(load_config()["INKSCAPE_VERSION"])
+
+
+# seaborn settings
+sns.set_theme(
+    style="ticks",
+    palette=PALETTE,
+    font="Verdana",
+)
+# matpltotlib settings
+mpl.rcParams["xtick.labelsize"] = 14
+mpl.rcParams["ytick.labelsize"] = 14
+mpl.rcParams["axes.labelsize"] = 14
+mpl.rcParams["figure.labelsize"] = 14
+mpl.rcParams["font.family"] = "sans-serif"
+mpl.rcParams["font.sans-serif"] = "Verdana"
 
 
 def plot_voxel_performance(
@@ -466,13 +462,6 @@ def make_training_curve_fig(
         ["subject", "feature", "curr_n_train_stories", "shuffle"]
     )
 
-    palette = sns.husl_palette(8)
-    sns.set_theme(
-        style="ticks",
-        palette=palette,
-        font="Verdana",
-    )
-
     # plot
     ax = sns.lineplot(
         data=plot_df,
@@ -485,26 +474,28 @@ def make_training_curve_fig(
     )
 
     # add error bars
-
     for idx, subject in enumerate(sorted(plot_df["subject"].unique())):
         subject_df = plot_df[plot_df["subject"] == subject]
         ax.fill_between(
             x=subject_df["curr_n_train_stories"],
             y1=subject_df["rho_mean"] - subject_df["SEM"],
             y2=subject_df["rho_mean"] + subject_df["SEM"],
-            color=palette[idx],
+            color=PALETTE[idx],
             alpha=0.2,
         )
 
     # styling / text
-    ax.set_xlabel("Number of Training Stories", fontsize=18)
+    ax.set_xlabel(plot_config.get("xlabel", "Number of Training Stories"), fontsize=18)
     ax.set_ylabel("Mean Correlation (r)", fontsize=18)
-    ax.set_xlim(plot_config.get("xlim", (0, 25.25)))
-    ax.set_ylim(plot_config.get("ylim", (0.01, 0.0875)))
+    ax.set_xlim(plot_config.get("xlim", (0, 25.35)))
+    ax.set_ylim(plot_config.get("ylim", (0.01, 0.09)))
     ax.set_yticks(
         plot_config.get("yticks", [0.02, 0.04, 0.06, 0.08]),
         labels=plot_config.get("ylabels", ["0.02", "0.04", "0.06", "0.08"]),
     )
+    ax.set
+    ax.grid(visible=True, axis="y", color="#CFCFCF")
+    ax.set_axisbelow(True)
     ax.get_legend().set_visible(False)
     sns.despine(ax=ax, top=True, right=True, left=True, bottom=True)
 
@@ -540,6 +531,8 @@ def plot_figure2(
 
     subject = "UTS02"
     figsize = (6, 4)
+    # setting the theme twice with seaborn makes it create
+    # slightly different plots
 
     if save_path is None:
         save_path = Path("plots", "figure2")
@@ -551,18 +544,18 @@ def plot_figure2(
         console.print(
             "\n > Reproduction: different-team-same-articacts", style="yellow"
         )
-        fig3_reproduction, ax3_reproduction = plt.subplots(figsize=figsize)
+        fig_reproduction, ax_reproduction = plt.subplots(figsize=figsize)
         make_training_curve_fig(
             run_folder_name=reproduction_folder,
             feature="eng1000",
             subjects=None,
             n_train_stories=None,
             shuffle="not_shuffled",
-            ax=ax3_reproduction,
+            ax=ax_reproduction,
         )
         plt.tight_layout()
         save_fig_png_pdf(
-            fig3_reproduction,
+            fig_reproduction,
             save_path=save_path,
             filename="training_curve_reproduction",
         )
@@ -573,20 +566,18 @@ def plot_figure2(
             "\n > Replication ridgeCV: different-team-different-articacts",
             style="yellow",
         )
-        fig3_replication_ridgeCV, ax3_replication_ridgeCV = plt.subplots(
-            figsize=figsize
-        )
+        fig_replication_ridgeCV, ax_replication_ridgeCV = plt.subplots(figsize=figsize)
         make_training_curve_fig(
             run_folder_name=replication_ridgeCV_folder,
             feature="eng1000",
             subjects=None,
             n_train_stories=None,
             shuffle="not_shuffled",
-            ax=ax3_replication_ridgeCV,
+            ax=ax_replication_ridgeCV,
         )
         plt.tight_layout()
         save_fig_png_pdf(
-            fig3_replication_ridgeCV,
+            fig_replication_ridgeCV,
             save_path=save_path,
             filename="training_curve_replication_ridgeCV",
         )
@@ -600,7 +591,7 @@ def plot_figure2(
         console.print(
             "\n > Reproduction: different-team-same-articacts", style="yellow"
         )
-        fig1_reproduction = make_brain_fig(
+        fig_brain_reproduction = make_brain_fig(
             run_folder_name=reproduction_folder,
             subject=subject,
             feature="eng1000",
@@ -611,7 +602,7 @@ def plot_figure2(
             with_labels=False,
         )
         save_fig_png_pdf(
-            fig1_reproduction,
+            fig_brain_reproduction,
             save_path=save_path,
             filename="reproduction_semantic_performance",
         )
@@ -625,7 +616,7 @@ def plot_figure2(
             "\n > Replication ridgeCV: different-team-different-articacts",
             style="yellow",
         )
-        fig2_replication_ridgeCV = make_brain_fig(
+        fig_brain_replication_ridgeCV = make_brain_fig(
             run_folder_name=replication_ridgeCV_folder,
             subject=subject,
             feature="eng1000",
@@ -636,15 +627,14 @@ def plot_figure2(
             with_labels=False,
         )
         save_fig_png_pdf(
-            fig2_replication_ridgeCV,
+            fig_brain_replication_ridgeCV,
             save_path=save_path,
             filename="replication_ridgeCV_semantic_performance",
         )
 
+    console.print("\n > Colorbar", style="yellow")
     fig_cbar, ax = plt.subplots(figsize=(6, 0.45))
     make_colorbar(ax)
-
-    console.print("\n > Colorbar", style="yellow")
     save_fig_png_pdf(
         fig=fig_cbar,
         save_path=save_path,
@@ -655,10 +645,56 @@ def plot_figure2(
 def plot_figure3(
     replication_ridgeCV_folder: str,
     replication_ridge_huth_folder: str,
-    save_path: Optional[str],
+    save_path: Optional[Union[str, Path]],
 ):
+    """Plot figure 3 plots"""
+
+    figsize = (5, 4)
+
     if save_path is None:
-        save_path = "plots"
+        save_path = Path("plots", "figure3")
+    check_make_dirs(save_path, isdir=True)
+    console.print("\nFigure 3 - 'patching experiment'", style="red bold")
+
+    plot_config = dict(xlabel="# Training Stories", xlim=(0, 25.9))
+
+    # ridgeCV: Training curve
+    console.print("\n > Training curve: ridgeCV", style="yellow")
+    fig3_ridgeCV, ax3_ridgeCV = plt.subplots(figsize=figsize)
+    make_training_curve_fig(
+        run_folder_name=replication_ridgeCV_folder,
+        feature="eng1000",
+        subjects=None,
+        n_train_stories=None,
+        shuffle="not_shuffled",
+        ax=ax3_ridgeCV,
+        plot_config=plot_config,
+    )
+    plt.tight_layout()
+    save_fig_png_pdf(
+        fig3_ridgeCV,
+        save_path=save_path,
+        filename="training_curve_ridgeCV",
+    )
+
+    # ridge_huth: Training curve
+    console.print("\n > Training curve: ridge_huth", style="yellow")
+    fig3_ridge_huth, ax3_ridge_huth = plt.subplots(figsize=figsize)
+    make_training_curve_fig(
+        run_folder_name=replication_ridge_huth_folder,
+        feature="eng1000",
+        subjects=None,
+        n_train_stories=None,
+        shuffle="not_shuffled",
+        ax=ax3_ridge_huth,
+        plot_config=plot_config,
+    )
+    plt.tight_layout()
+    save_fig_png_pdf(
+        fig3_ridge_huth,
+        save_path=save_path,
+        filename="training_curve_ridge_huth",
+    )
 
 
 def plot_figure4(
@@ -667,7 +703,7 @@ def plot_figure4(
 ):
     console.print("\nFigure 4: Extension: Audio Envelope", style="red bold")
     subject = "UTS02"
-    figsize = (6, 4)
+    figsize = (5, 4)
 
     if save_path is None:
         save_path = Path("plots", "figure4")
@@ -686,13 +722,15 @@ def plot_figure4(
             ylim=(0.004, 0.026),
             yticks=[0.005, 0.01, 0.015, 0.02, 0.025],
             ylabels=[".005", ".010", ".015", ".020", ".025"],
+            xlabel="# Training Stories",
+            xlim=(0, 25.9),
         ),
     )
     plt.tight_layout()
     save_fig_png_pdf(
         fig4_extension_curve,
         save_path=save_path,
-        filename="training_curve_extension_ridge_huth",
+        filename="training_curve_extension_ridgeCV",
     )
 
     console.print("\n > Brain fig - ridge_huth", style="yellow")
@@ -709,7 +747,7 @@ def plot_figure4(
     save_fig_png_pdf(
         fig4_extension_brain,
         save_path=save_path,
-        filename="semantic_performance_extension_ridge_huth",
+        filename="semantic_performance_extension_ridgeCV",
     )
 
     fig_cbar, ax = plt.subplots(figsize=(6, 0.45))
@@ -754,7 +792,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--figure",
-        choices=["all", "figure1", "figure4"],
+        choices=["all", "figure2", "figure3", "figure4"],
         default="all",
         help="Which figures to plot. Default 'all'",
     )
