@@ -522,7 +522,7 @@ def save_fig_png_pdf(
     plt.close()
 
 
-def plot_figure2(
+def plot_figure1(
     reproduction_folder: Optional[str],
     replication_ridgeCV_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
@@ -535,7 +535,7 @@ def plot_figure2(
     # slightly different plots
 
     if save_path is None:
-        save_path = Path("plots", "figure2")
+        save_path = Path("plots", "figure1")
     check_make_dirs(save_path, isdir=True)
 
     console.print("\nTraining curve", style="red bold")
@@ -642,7 +642,7 @@ def plot_figure2(
     )
 
 
-def plot_figure3(
+def plot_figure2(
     replication_ridgeCV_folder: str,
     replication_ridge_huth_folder: str,
     save_path: Optional[Union[str, Path]],
@@ -652,7 +652,7 @@ def plot_figure3(
     figsize = (5, 4)
 
     if save_path is None:
-        save_path = Path("plots", "figure3")
+        save_path = Path("plots", "figure2")
     check_make_dirs(save_path, isdir=True)
     console.print("\nFigure 3 - 'patching experiment'", style="red bold")
 
@@ -697,7 +697,7 @@ def plot_figure3(
     )
 
 
-def plot_figure4(
+def plot_figure3(
     replication_ridgeCV_folder: str,
     save_path: Optional[Union[str, Path]] = None,
 ):
@@ -706,7 +706,7 @@ def plot_figure4(
     figsize = (5, 4)
 
     if save_path is None:
-        save_path = Path("plots", "figure4")
+        save_path = Path("plots", "figure3")
     check_make_dirs(save_path, isdir=True)
 
     console.print("\n > Training curve - ridge_huth:", style="yellow")
@@ -792,7 +792,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--figure",
-        choices=["all", "figure2", "figure3", "figure4"],
+        choices=["all", "figure1", "figure2", "figure3"],
         default="all",
         help="Which figures to plot. Default 'all'",
     )
@@ -801,20 +801,20 @@ if __name__ == "__main__":
 
     cfg = load_config()
 
-    if args.figure in ["figure2", "all"]:
-        plot_figure2(
+    if args.figure in ["figure1", "all"]:
+        plot_figure1(
             reproduction_folder=args.reproduction,
             replication_ridgeCV_folder=args.replication_ridgeCV,
             save_path=args.save_path,
         )
-    elif args.figure in ["figure3", "all"]:
-        plot_figure3(
+    elif args.figure in ["figure2", "all"]:
+        plot_figure2(
             replication_ridgeCV_folder=args.replication_ridgeCV,
             replication_ridge_huth_folder=args.replication_ridge_huth,
             save_path=args.save_path,
         )
-    elif args.figure in ["figure4", "all"]:
-        plot_figure4(
+    elif args.figure in ["figure3", "all"]:
+        plot_figure3(
             replication_ridgeCV_folder=args.replication_ridgeCV,
             save_path=args.save_path,
         )
