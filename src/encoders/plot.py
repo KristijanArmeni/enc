@@ -527,7 +527,7 @@ def plot_figure1(
     replication_ridgeCV_folder: Optional[str],
     save_path: Optional[Union[str, Path]],
 ):
-    """Plot figure 2 plots"""
+    """Plot figure 1 plots"""
 
     subject = "UTS02"
     figsize = (6, 4)
@@ -647,14 +647,14 @@ def plot_figure2(
     replication_ridge_huth_folder: str,
     save_path: Optional[Union[str, Path]],
 ):
-    """Plot figure 3 plots"""
+    """Plot figure 2 plots"""
 
     figsize = (5, 4)
 
     if save_path is None:
         save_path = Path("plots", "figure2")
     check_make_dirs(save_path, isdir=True)
-    console.print("\nFigure 3 - 'patching experiment'", style="red bold")
+    console.print("\nFigure 2 - 'patching experiment'", style="red bold")
 
     plot_config = dict(xlabel="# Training Stories", xlim=(0, 25.9))
 
@@ -701,7 +701,7 @@ def plot_figure3(
     replication_ridgeCV_folder: str,
     save_path: Optional[Union[str, Path]] = None,
 ):
-    console.print("\nFigure 4: Extension: Audio Envelope", style="red bold")
+    console.print("\nFigure 3: Extension: Audio Envelope", style="red bold")
     subject = "UTS02"
     figsize = (5, 4)
 
