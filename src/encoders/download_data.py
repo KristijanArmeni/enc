@@ -14,7 +14,10 @@ DATASET_URL = "https://github.com/OpenNeuroDatasets/ds003020.git"
 
 
 def download_data(
-    data_dir: Optional[str], stories: str, subjects: Union[str, list[str]]
+    data_dir: Optional[str],
+    stories: str,
+    subjects: Union[str, list[str]],
+    figures: bool,
 ):
     """Downloads Lebel et al (2023) preprocessed data via Datalad API
     from the Openneuro source repository (https://github.com/OpenNeuroDatasets/ds003020.git)
@@ -31,6 +34,8 @@ def download_data(
     subjects: Union[str, list[str]]
         The subject datasets to download. Can be a single subject (e.g. 'UTS02') or
         a list of subjects or a string 'all' to download data for all subjects.
+    figures: bool
+        Whether to only download the data required to reproduce the figures.
 
     Returns
     -------
@@ -61,48 +66,34 @@ def download_data(
     else:
         clone(source=DATASET_URL, path=data_dir)
 
-    # 2. Download relevant data
-    if "all" in stories:
-        log.info("Downloading all data, this can take a while.")
-        get(
-            dataset=data_dir,
-            path=Path(data_dir, "derivative/english1000sm.hf5"),
-        )
-        for subject in subjects:
-            get(
-                dataset=data_dir,
-                path=Path(data_dir, "derivative/TextGrids"),
-            )
-            get(
-                dataset=data_dir,
-                path=Path(data_dir, "stimuli"),
-            )
+    if figures:
+        # Only download data for figures
+        log.info("Downloading data from OpenNeuro required to reproduce figures")
+
+        for subject in ["UTS01", "UTS02", "UTS03"]:
             get(
                 dataset=data_dir,
                 path=Path(data_dir, f"derivative/pycortex-db/{subject}"),
             )
+
+        log.info("Downloading correlation results from OSF")
+
+    else:
+        # Download specified neuro data
+        if "all" in stories:
+            log.info("Downloading all data, this can take a while.")
             get(
                 dataset=data_dir,
-                path=Path(data_dir, f"derivative/preprocessed_data/{subject}"),
+                path=Path(data_dir, "derivative/english1000sm.hf5"),
             )
-    else:
-        log.info("Downloading three stories")
-        story_names = ["souls", "alternateithicatom", "avatar"]
-
-        get(
-            dataset=data_dir,
-            path=Path(data_dir, "derivative/english1000sm.hf5"),
-        )
-
-        for story_name in story_names:
             for subject in subjects:
                 get(
                     dataset=data_dir,
-                    path=Path(data_dir, f"derivative/TextGrids/{story_name}.TextGrid"),
+                    path=Path(data_dir, "derivative/TextGrids"),
                 )
                 get(
                     dataset=data_dir,
-                    path=Path(data_dir, f"stimuli/{story_name}.wav"),
+                    path=Path(data_dir, "stimuli"),
                 )
                 get(
                     dataset=data_dir,
@@ -110,11 +101,40 @@ def download_data(
                 )
                 get(
                     dataset=data_dir,
-                    path=Path(
-                        data_dir,
-                        f"derivative/preprocessed_data/{subject}/{story_name}.hf5",
-                    ),
+                    path=Path(data_dir, f"derivative/preprocessed_data/{subject}"),
                 )
+        else:
+            log.info("Downloading three stories")
+            story_names = ["souls", "alternateithicatom", "avatar"]
+
+            get(
+                dataset=data_dir,
+                path=Path(data_dir, "derivative/english1000sm.hf5"),
+            )
+
+            for story_name in story_names:
+                for subject in subjects:
+                    get(
+                        dataset=data_dir,
+                        path=Path(
+                            data_dir, f"derivative/TextGrids/{story_name}.TextGrid"
+                        ),
+                    )
+                    get(
+                        dataset=data_dir,
+                        path=Path(data_dir, f"stimuli/{story_name}.wav"),
+                    )
+                    get(
+                        dataset=data_dir,
+                        path=Path(data_dir, f"derivative/pycortex-db/{subject}"),
+                    )
+                    get(
+                        dataset=data_dir,
+                        path=Path(
+                            data_dir,
+                            f"derivative/preprocessed_data/{subject}/{story_name}.hf5",
+                        ),
+                    )
 
     # After download update the config data_dir
     if not Path("config.yaml").exists():
@@ -166,6 +186,12 @@ if __name__ == "__main__":
             "UTS08",
         ],
     )
+    parser.add_argument(
+        "--figures",
+        action="store_true",
+        help="Set true to only download data required to reproduce figures."
+        "Arguments other than `--data_dir` are ignored with this flag.",
+    )
     args = parser.parse_args()
 
-    download_data(args.data_dir, args.stories, args.subjects)
+    download_data(args.data_dir, args.stories, args.subjects, args.figures)
