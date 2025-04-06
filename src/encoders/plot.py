@@ -18,6 +18,7 @@ import pandas as pd
 import seaborn as sns
 from cortex import svgoverlay
 from rich.console import Console
+from tqdm import tqdm
 
 from encoders.utils import check_make_dirs, get_logger, load_config
 
@@ -219,7 +220,7 @@ def load_data_wrapper(
         feature,
         curr_n_train_stories,
         shuffle,
-    ) in combinations:
+    ) in tqdm(combinations, desc="(loading data)"):
         try:
             mean_data, sem_data = load_data(
                 run_folder_name=run_folder_name,
@@ -275,7 +276,7 @@ def load_data_wrapper_df(
         feature,
         curr_n_train_stories,
         shuffle,
-    ) in combinations:
+    ) in tqdm(combinations, desc="(loading data)"):
         try:
             mean_data, sem_data = load_data(
                 run_folder_name=run_folder_name,
@@ -429,14 +430,13 @@ def make_training_curve_fig(
     feature: str,
     subjects: Optional[list[str]],
     n_train_stories: Optional[list[int]],
-    shuffle: str,
+    shuffle: Union[str, list[str]],
     ax: Optional[matplotlib.axes.Axes] = None,
     plot_config: Optional[dict] = None,
 ) -> matplotlib.axes.Axes:
     """Plots mean correlation with standard error."""
 
     assert not isinstance(feature, list), "Can only plot for one feature"
-    assert not isinstance(shuffle, list), "Can only plot for one shuffle"
 
     if plot_config is None:
         plot_config = dict()
@@ -468,21 +468,26 @@ def make_training_curve_fig(
         x="curr_n_train_stories",
         y="rho_mean",
         hue="subject",
+        style=plot_config.get("style", None),
         ax=ax,
-        marker="o",
+        marker=plot_config.get("marker", "o"),
+        markers=plot_config.get("markers", None),
         markersize=9,
     )
 
     # add error bars
     for idx, subject in enumerate(sorted(plot_df["subject"].unique())):
-        subject_df = plot_df[plot_df["subject"] == subject]
-        ax.fill_between(
-            x=subject_df["curr_n_train_stories"],
-            y1=subject_df["rho_mean"] - subject_df["SEM"],
-            y2=subject_df["rho_mean"] + subject_df["SEM"],
-            color=PALETTE[idx],
-            alpha=0.2,
-        )
+        for shuffle in plot_df["shuffle"].unique():
+            subject_df = plot_df[
+                (plot_df["subject"] == subject) & (plot_df["shuffle"] == shuffle)
+            ]
+            ax.fill_between(
+                x=subject_df["curr_n_train_stories"],
+                y1=subject_df["rho_mean"] - subject_df["SEM"],
+                y2=subject_df["rho_mean"] + subject_df["SEM"],
+                color=PALETTE[idx],
+                alpha=0.2,
+            )
 
     # styling / text
     ax.set_xlabel(plot_config.get("xlabel", "Number of Training Stories"), fontsize=18)
@@ -716,12 +721,15 @@ def plot_figure3(
         feature="envelope",
         subjects=None,
         n_train_stories=None,
-        shuffle="not_shuffled",
+        shuffle=["not_shuffled", "shuffled"],
         ax=ax4_extension_curve,
         plot_config=dict(
-            ylim=(0.004, 0.026),
-            yticks=[0.005, 0.01, 0.015, 0.02, 0.025],
-            ylabels=[".005", ".010", ".015", ".020", ".025"],
+            style="shuffle",
+            marker=None,
+            markers=dict(not_shuffled="o", shuffled="X"),
+            ylim=(-0.006, 0.027),
+            yticks=[-0.005, 0.0, 0.005, 0.01, 0.015, 0.02, 0.025],
+            ylabels=["-.005", ".000", ".005", ".010", ".015", ".020", ".025"],
             xlabel="# Training Stories",
             xlim=(0, 25.9),
         ),
