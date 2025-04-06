@@ -50,14 +50,15 @@ python src/encoders/download_data.py --figures
 # this will also create a config.yaml file which you can adapt.
 ```
 
-For the correlation results, download the [`runs.zip` file](https://osf.io/g9cy3/metadata/?format=datacite-json) into the project directory, and unzip it there, such that you have a `runs`:
+For the correlation results, download the [`runs.zip` file](https://osf.io/download/g9cy3) into the project directory, and unzip it there, such that you have a `runs` directory with the experiment folders as subdirs:
 ```
+runs/extension_ridgeCV
 runs/replication_ridge_huth
 runs/replication_ridgeCV
 runs/reproduction
 ```
 
-4. Install [inkscape](https://inkscape.org/) and set config values
+1. Install [inkscape](https://inkscape.org/) and set config values
 
 Open the `config.yaml` and set the following values accordingly.
 ```yaml
@@ -82,10 +83,11 @@ Whereas `DATA_DIR` is the directory of the Lebel et al. data repository.
 If you have followed the instructions above then `DATA_DIR=path/to/enc/ds003020`, if you chose a custom `DATA_DIR` use that instead.
 
 
-6. Reproduce the figures:
+6. Reproduce the plots in the figures:
 
 ```sh
-python src/encoders/plot.py # will create plots for all figures
+# will create plots for all plots
+python src/encoders/plot.py
 ```
 
 ## Reproduce correlation results
@@ -120,15 +122,69 @@ python src/encoders/run_all.py\
 
 ```sh
 # Reproduction
+python -m lebel_encoding.run_all_replication \
+--subject UTS01 UTS02 UTS03 \
+--feature eng1000 \
+--test_story wheretheressmoke \
+--n_train_stories 1 2 3 5 7 9 11 13 15 17 19 21 23 25 \
+--n_repeats 15 \
+--trim 5 \
+--ndelays 4 \
+--nboots 20 \
+--chunklen 10 \
+--nchunks 10 \
+--use_corr \
+--run_folder_name reproduction
 
 
 # Replication ridgeCV
+python -m encoders.run_all \
+--subject UTS01 UTS02 UTS03 \
+--feature eng1000 \
+--ndelays 4 \
+--interpolation 'lanczos' \
+--ridge_implementation 'ridgeCV' \
+--n_train_stories 1 2 3 5 7 9 11 13 15 17 19 21 23 25 \
+--test_story 'wheretheressmoke' \
+--cross_validation 'simple' \
+--n_repeats 15 \
+--no_keep_train_stories_in_mem \
+--run_folder_name replication_ridgeCV
 
 
 # Replication ridge_huth
+python -m encoders.run_all \
+--subject UTS01 UTS02 UTS03 \
+--feature eng1000 \
+--n_train_stories 1 2 3 5 7 9 11 13 15 17 19 21 23 25  \
+--test_story wheretheressmoke \
+--cross_validation 'simple' \
+--interpolation 'lanczos' \
+--ridge_implementation 'ridge_huth' \
+--n_repeats 15 \
+--ndelays 4 \
+--nboots 20 \
+--chunklen 10 \
+--nchunks 10 \
+--use_corr \
+--no_keep_train_stories_in_mem \
+--run_folder_name replication_ridge_huth
 
 
 # Extension
+python -m encoders.run_all \
+--subject UTS01 UTS02 UTS03 \
+--feature 'envelope' \
+--do_shuffle \
+--ndelays 4 \
+--interpolation 'lanczos' \
+--ridge_implementation 'ridgeCV' \
+--n_train_stories 1 2 3 5 7 9 11 13 15 17 19 21 23 25 \
+--test_story 'wheretheressmoke' \
+--cross_validation 'simple' \
+--n_repeats 15 \
+--no_keep_train_stories_in_mem \
+--run_folder_name extension_ridgeCV
 ```
 
 **It is likely you will need to run the analyses on a HPC system due to RAM requirements.**
