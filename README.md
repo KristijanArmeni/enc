@@ -64,7 +64,8 @@ cortex.options.usercfg
 ## Development setup
 
 1. [Install poetry](https://python-poetry.org/docs/#installation)
-2. Run following commands:
+2. Tested for `poetry==2.1.2`
+3. Run following commands:
 
 ```sh
 # setup up conda environment (optional)
