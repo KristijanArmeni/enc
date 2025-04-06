@@ -543,11 +543,12 @@ def plot_figure1(
         save_path = Path("plots", "figure1")
     check_make_dirs(save_path, isdir=True)
 
-    console.print("\nTraining curve", style="red bold")
+    console.print("\nFigure 1 - 'Main': Reproduction & replication", style="red bold")
     # REPRODUCTION: Training curve
     if Path(reproduction_dir).exists():
         console.print(
-            "\n > Reproduction: different-team-same-articacts", style="yellow"
+            "\n > Training curve - Reproduction: different-team-same-articacts",
+            style="yellow",
         )
         fig_reproduction, ax_reproduction = plt.subplots(figsize=figsize)
         make_training_curve_fig(
@@ -570,7 +571,8 @@ def plot_figure1(
     # REPLICATION ridgeCV: Training curve
     if Path(replication_ridgeCV_dir).exists():
         console.print(
-            "\n > Replication ridgeCV: different-team-different-articacts",
+            "\n > Training curve - Replication ridgeCV:"
+            " different-team-different-articacts",
             style="yellow",
         )
         fig_replication_ridgeCV, ax_replication_ridgeCV = plt.subplots(figsize=figsize)
@@ -591,11 +593,11 @@ def plot_figure1(
     else:
         log.warning(f"Cannot find replication dir: '{Path(replication_ridgeCV_dir)}'")
 
-    console.print("\nBrain fig", style="red bold")
     # REPRODUCTION: Brain fig
     if Path(reproduction_dir).exists():
         console.print(
-            "\n > Reproduction: different-team-same-articacts", style="yellow"
+            "\n > Brain fig - Reproduction: different-team-same-articacts",
+            style="yellow",
         )
         fig_brain_reproduction = make_brain_fig(
             run_folder_name=reproduction_dir,
@@ -616,7 +618,7 @@ def plot_figure1(
     # REPLICATION ridgeCV: brain fig
     if Path(replication_ridgeCV_dir).exists():
         console.print(
-            "\n > Replication ridgeCV: different-team-different-articacts",
+            "\n > Brain fig - Replication ridgeCV: different-team-different-articacts",
             style="yellow",
         )
         fig_brain_replication_ridgeCV = make_brain_fig(
@@ -657,12 +659,12 @@ def plot_figure2(
     if save_path is None:
         save_path = Path("plots", "figure2")
     check_make_dirs(save_path, isdir=True)
-    console.print("\nFigure 2 - 'patching experiment'", style="red bold")
+    console.print("\nFigure 2 - 'Replication': Patching experiment", style="red bold")
 
     plot_config = dict(xlabel="# Training Stories", xlim=(0, 25.9))
 
     # ridgeCV: Training curve
-    console.print("\n > Training curve: ridgeCV", style="yellow")
+    console.print("\n > Training curve - ridgeCV", style="yellow")
     fig3_ridgeCV, ax3_ridgeCV = plt.subplots(figsize=figsize)
     make_training_curve_fig(
         run_folder_name=replication_ridgeCV_dir,
@@ -681,7 +683,7 @@ def plot_figure2(
     )
 
     # ridge_huth: Training curve
-    console.print("\n > Training curve: ridge_huth", style="yellow")
+    console.print("\n > Training curve - ridge_huth", style="yellow")
     fig3_ridge_huth, ax3_ridge_huth = plt.subplots(figsize=figsize)
     make_training_curve_fig(
         run_folder_name=replication_ridge_huth_dir,
@@ -701,10 +703,10 @@ def plot_figure2(
 
 
 def plot_figure3(
-    replication_ridgeCV_dir: str,
+    extension_ridgeCV_dir: str,
     save_path: Optional[Union[str, Path]] = None,
 ):
-    console.print("\nFigure 3: Extension: Audio Envelope", style="red bold")
+    console.print("\nFigure 3 - 'Extension': Audio envelope", style="red bold")
     subject = "UTS02"
     figsize = (5, 4)
 
@@ -715,7 +717,7 @@ def plot_figure3(
     console.print("\n > Training curve - ridge_huth:", style="yellow")
     fig4_extension_curve, ax4_extension_curve = plt.subplots(figsize=figsize)
     make_training_curve_fig(
-        run_folder_name=replication_ridgeCV_dir,
+        run_folder_name=extension_ridgeCV_dir,
         feature="envelope",
         subjects=None,
         n_train_stories=None,
@@ -741,7 +743,7 @@ def plot_figure3(
 
     console.print("\n > Brain fig - ridge_huth", style="yellow")
     fig4_extension_brain = make_brain_fig(
-        run_folder_name=replication_ridgeCV_dir,
+        run_folder_name=extension_ridgeCV_dir,
         subject=subject,
         feature="envelope",
         n_train_stories=[25],
@@ -776,19 +778,25 @@ if __name__ == "__main__":
         "--reproduction",
         type=str,
         default="runs/reproduction",
-        help="folder with results for the reproduction experiment to be plotted",
+        help="folder with correlation results for the reproduction experiment",
     )
     parser.add_argument(
         "--replication_ridgeCV",
         type=str,
         default="runs/replication_ridgeCV",
-        help="folder with result for the replication experiment to be ploted",
+        help="folder with correlation result for the replication experiment ",
     )
     parser.add_argument(
         "--replication_ridge_huth",
         type=str,
         default="runs/replication_ridge_huth",
-        help="folder with result for the replication experiment to be ploted",
+        help="folder with correlation result for the replication experiment",
+    )
+    parser.add_argument(
+        "--extension_ridgeCV",
+        type=str,
+        default="runs/extension_ridgeCV",
+        help="folder with correlation result for the extension experiment",
     )
     parser.add_argument(
         "--save_path",
@@ -813,14 +821,14 @@ if __name__ == "__main__":
             replication_ridgeCV_dir=args.replication_ridgeCV,
             save_path=args.save_path,
         )
-    elif args.figure in ["figure2", "all"]:
+    if args.figure in ["figure2", "all"]:
         plot_figure2(
             replication_ridgeCV_dir=args.replication_ridgeCV,
             replication_ridge_huth_dir=args.replication_ridge_huth,
             save_path=args.save_path,
         )
-    elif args.figure in ["figure3", "all"]:
+    if args.figure in ["figure3", "all"]:
         plot_figure3(
-            replication_ridgeCV_dir=args.replication_ridgeCV,
+            extension_ridgeCV_dir=args.extension_ridgeCV,
             save_path=args.save_path,
         )
