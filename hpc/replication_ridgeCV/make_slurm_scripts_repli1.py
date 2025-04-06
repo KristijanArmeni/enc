@@ -7,7 +7,7 @@ SUBJECTS = ["UTS01", "UTS02", "UTS03"]
 N_STORIES = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
 
 
-def create_scripts_extension(
+def create_scripts_replication1(
     email: str = None, log_path: str = None, run_folder_name: str = None
 ) -> None:
     """
@@ -129,7 +129,7 @@ def main():
     if args.log_path:
         Path(args.log_path).mkdir(parents=True, exist_ok=True)
 
-    create_scripts_extension(
+    create_scripts_replication1(
         email=args.email,
         log_path=args.log_path,
         run_folder_name=args.run_folder_name,
