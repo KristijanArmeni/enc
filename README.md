@@ -88,36 +88,52 @@ If you have followed the instructions above then `DATA_DIR=path/to/enc/ds003020`
 python src/encoders/plot.py # will create plots for all figures
 ```
 
-
-
 ## Reproduce correlation results
 
 
+1. Follow step 1. and 2. from above.
+
+2. Download data
+
 ```sh
-# setup up conda environment
-conda create -n enc python=3.9
-conda activate enc
-
-# install package
-pip install .
-
-# install git-annex
-https://handbook.datalad.org/en/latest/intro/installation.html
-
-# download the data required for brain visualization
-python src/encoders/download_data.py # subject 2 & few stories
-python src/encoders/download_data.py --stories all # subject 2 & all stories
-python src/encoders/download_data.py --stories all --subjects all # all subjects & all stories
+# all stories for the 3 subjects in our analysis
+python src/encoders/download_data.py --stories all --subjects UTS01, UTS02, UTS03
 
 # you can also install the path into a custom dir
 python src/encoders/download_data.py --data_dir /path/to/custom/dir
-
-
-# Setup the config with the editor of your choice
-nano config.yaml
-# If you want to generate plots, make sure to install inkscape
-# and set its path in INKSCAPE_DIR (see below)
 ```
+
+3. Run test regression
+
+```sh
+python src/encoders/run_all.py\
+  --cross_validation simple\
+  --subject UTS02\
+  --feature eng1000\
+  --n_train_stories 2\
+  --n_repeats 3\
+  --ridge_implementation ridgeCV\
+  --run_folder_name example
+```
+
+4. Run regressions reproducing our results
+
+```sh
+# Reproduction
+
+
+# Replication ridgeCV
+
+
+# Replication ridge_huth
+
+
+# Extension
+```
+
+**It is likely you will need to run the analyses on a HPC system due to RAM requirements.**
+
+For examples how we deployed the scripts on a cluster, see the [hpc](hpc) folder.
 
 ## Development setup
 
@@ -127,7 +143,7 @@ nano config.yaml
 
 ```sh
 # setup up conda environment (optional)
-conda create -n enc python=3.9
+conda create -n enc python=3.12
 conda activate enc
 
 # install dependencies
@@ -136,10 +152,7 @@ poetry install
 # install pre-commit
 pre-commit install
 
-# run pre-commit against all files once
-pre-commit run --all-files
-
-# download the data (one of the below)
+# download some data for testing
 python src/encoders/download_data.py # subject 2 & few stories
 
 # Setup the config with the editor of your choice
