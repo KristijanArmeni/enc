@@ -1,6 +1,6 @@
 This folder contains SLURM scripts to deploy 4 experiments using the functions in the `src.encoders` module.
 
-### Subfolders
+## Subfolders
 
 ```
 ├── extension_ridgeCV       |--> extension experiment
@@ -10,7 +10,7 @@ This folder contains SLURM scripts to deploy 4 experiments using the functions i
 └── README.md
 ```
 
-### Subfolder contents
+## Subfolder contents
 Each subfolder contains:
 
 1. *.py script used to create *.scripts (SLURM job) and `submit_jobs.sh`
