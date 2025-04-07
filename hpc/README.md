@@ -21,18 +21,18 @@ Each subfolder contains:
 
 For example for reproduction experiment:
 ```python
-python -m make_slurm_scripts_repro.py
+python make_slurm_scripts_repro.py
 ```
 
 Or you can specify `email`, `log_path`, and `run_folder_name` to be included in SLURM params:
 ```python
-python -m make_slurm_scripts_repro.py --email "myemail@email.com" --log_path "/path/to/log/folder" --run_folder_name "name_of_results_folder"
+python make_slurm_scripts_repro.py --email "myemail@email.com" --log_path "/path/to/log/folder" --run_folder_name "name_of_results_folder"
 ```
 
 The script prints an output like this:
 
 ```bash
->>> python -m make_slurm_scripts_repro
+>>> python make_slurm_scripts_repro.py
 Created run-all_repro_UTS01-1.script
 Created run-all_repro_UTS01-3.script
 Created run-all_repro_UTS01-5.script
